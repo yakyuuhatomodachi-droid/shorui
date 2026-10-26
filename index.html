@@ -1,0 +1,2243 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>アクア農園 書類作成</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap');
+
+  :root {
+    --bg: #EEF3EF;
+    --surface: #FFFFFF;
+    --border: #CFDCD3;
+    --text-primary: #1F2A24;
+    --text-secondary: #5B6A61;
+    --accent: #2E6B4E;
+    --accent-light: #E1EEE6;
+    --gold: #A8741A;
+    --gold-light: #F6EBD7;
+    --danger: #A9432E;
+    --danger-light: #F5E4DF;
+    --c-quote: #2B5683;   --c-quote-l: #E2EBF5;
+    --c-delivery: #2E6B4E; --c-delivery-l: #E1EEE6;
+    --c-invoice: #9A5B12; --c-invoice-l: #F6EBD7;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Zen Kaku Gothic New', -apple-system, 'Hiragino Sans', 'Yu Gothic', sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    line-height: 1.6;
+    border-top: 6px solid var(--accent);
+  }
+  .app { max-width: 1200px; margin: 0 auto; padding: 24px 24px 60px; }
+  .app-header { margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .app-header h1 { font-size: 22px; font-weight: 700; margin: 0 0 4px; }
+  .app-header p { margin: 0; color: var(--text-secondary); font-size: 13px; }
+  .header-btns { display: flex; gap: 8px; flex-shrink: 0; }
+  #refresh-data-btn, #top-link { flex-shrink: 0; white-space: nowrap; }
+  #top-link { text-decoration: none; display: inline-flex; align-items: center; }
+  #refresh-data-btn.is-loading { opacity: 0.6; pointer-events: none; }
+  .demo-banner { background: var(--gold-light); color: #6B4A0F; border: 1px solid #E5CFA4; border-radius: 8px; padding: 8px 12px; font-size: 13px; margin-bottom: 14px; display: none; }
+  .warn-banner { background: var(--danger-light); color: var(--danger); border: 1px solid #E8C3B8; border-radius: 8px; padding: 8px 12px; font-size: 13px; margin-bottom: 14px; display: none; }
+  .warn-banner button { margin-left: 6px; }
+
+  .tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--border); overflow-x: auto; }
+  .tab-btn {
+    appearance: none; border: none; background: none; font-family: inherit; font-size: 15px; font-weight: 500;
+    color: var(--text-secondary); padding: 10px 16px; cursor: pointer; border-bottom: 2px solid transparent;
+    margin-bottom: -1px; white-space: nowrap;
+  }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-btn:hover:not(.active) { color: var(--text-primary); }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+  .card h2 { font-size: 15px; font-weight: 700; margin: 0 0 14px; }
+  .card h3 { font-size: 14px; font-weight: 700; margin: 16px 0 8px; }
+  .hint { font-size: 12px; color: var(--text-secondary); }
+
+  .form-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .field { flex: 1; min-width: 140px; display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 12px; color: var(--text-secondary); }
+  .field input, .field select, .field textarea, .cell-input, .cell-select {
+    font-family: inherit; font-size: 15px; padding: 8px 10px; border: 1px solid var(--border);
+    border-radius: 6px; background: var(--bg); color: var(--text-primary); width: 100%;
+  }
+  .field textarea { resize: vertical; min-height: 60px; }
+  .field input:focus, .field select:focus, .field textarea:focus, .cell-input:focus, .cell-select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .cell-input, .cell-select { padding: 6px 8px; font-size: 14px; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .btn { font-family: inherit; font-size: 14px; font-weight: 500; padding: 9px 16px; border-radius: 6px; border: none; cursor: pointer; }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: #245740; }
+  .btn-ghost { font-family: inherit; font-size: 13px; padding: 6px 12px; border-radius: 6px; background: var(--surface); border: 1px solid var(--border); color: var(--text-primary); cursor: pointer; }
+  .btn-ghost:hover:not(:disabled) { border-color: var(--text-secondary); }
+  .btn-ghost:disabled { opacity: 0.3; cursor: default; }
+  .btn-ghost.btn-danger { color: var(--danger); border-color: var(--danger); }
+  .btn-ghost.btn-danger:hover { background: var(--danger); color: #fff; }
+  .btn-text { background: none; border: none; color: var(--accent); font-size: 13px; cursor: pointer; padding: 4px 8px; font-family: inherit; }
+  .btn-text:hover { text-decoration: underline; }
+  .btn-text-danger { background: none; border: none; color: var(--danger); font-size: 13px; cursor: pointer; padding: 4px 8px; font-family: inherit; }
+  .btn-text-danger:hover { text-decoration: underline; }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+  .error-text { color: var(--danger); font-size: 13px; margin: 4px 0 8px; display: none; }
+  .error-text.show { display: block; }
+  .empty-state { text-align: center; padding: 26px 10px; color: var(--text-secondary); font-size: 14px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; font-size: 12px; color: var(--text-secondary); font-weight: 500; padding: 8px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .row-actions { white-space: nowrap; text-align: right; }
+
+  /* 書類の種類 */
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 14px; flex-wrap: wrap; }
+  .seg-btn { font-family: inherit; font-size: 15px; font-weight: 700; padding: 9px 22px; border: none; background: var(--surface); color: var(--text-secondary); cursor: pointer; }
+  .seg-btn + .seg-btn { border-left: 1px solid var(--border); }
+  .seg-btn[data-type="quote"] { color: var(--c-quote); }
+  .seg-btn[data-type="delivery"] { color: var(--c-delivery); }
+  .seg-btn[data-type="invoice"] { color: var(--c-invoice); }
+  .seg-btn.active { color: #fff; }
+  .seg-btn[data-type="quote"].active { background: var(--c-quote); }
+  .seg-btn[data-type="delivery"].active { background: var(--c-delivery); }
+  .seg-btn[data-type="invoice"].active { background: var(--c-invoice); }
+  .seg-btn[data-type=""].active { background: var(--text-primary); }
+  .seg.small .seg-btn { font-size: 13px; padding: 6px 14px; }
+
+  .tag { display: inline-block; padding: 0 8px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+  .tag.quote { background: var(--c-quote-l); color: var(--c-quote); }
+  .tag.delivery { background: var(--c-delivery-l); color: var(--c-delivery); }
+  .tag.invoice { background: var(--c-invoice-l); color: var(--c-invoice); }
+  .tag.paid { background: #DDF0E5; color: #2E7D57; }
+  .tag.unpaid { background: var(--danger-light); color: var(--danger); }
+  .tag.done { background: #ECEFED; color: var(--text-secondary); }
+
+  .editing-bar { display: none; background: var(--gold-light); border: 1px solid #E5CFA4; color: #6B4A0F; border-radius: 8px; padding: 8px 12px; font-size: 13px; margin-bottom: 12px; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .editing-bar.show { display: flex; }
+
+  /* 明細の入力表 */
+  .lines-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+  .lines-table { width: 100%; min-width: 720px; border-collapse: separate; border-spacing: 0; font-size: 14px; }
+  .lines-table th { background: var(--bg); padding: 6px 6px; font-size: 12px; }
+  .lines-table td { padding: 4px 4px; border-bottom: 1px solid var(--border); }
+  .lines-table tr:last-child td { border-bottom: none; }
+  .lines-table .cell-input, .lines-table .cell-select { padding: 6px 6px; }
+  .lines-table .c-date { width: 128px; }
+  .lines-table .c-qty { width: 78px; }
+  .lines-table .c-unit { width: 66px; }
+  .lines-table .c-price { width: 100px; }
+  .lines-table .c-rate { width: 92px; }
+  .lines-table .c-amt { width: 104px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; padding-right: 8px; }
+  .lines-table .c-op { width: 74px; white-space: nowrap; text-align: center; }
+  .icon-btn { font-family: inherit; background: none; border: 1px solid transparent; border-radius: 4px; color: var(--text-secondary); cursor: pointer; padding: 2px 5px; font-size: 13px; }
+  .icon-btn:hover { border-color: var(--border); color: var(--text-primary); }
+  .icon-btn.del:hover { color: var(--danger); border-color: var(--danger); }
+
+  .totals { display: flex; justify-content: flex-end; margin-top: 12px; }
+  .totals table { width: auto; min-width: 300px; font-size: 14px; }
+  .totals td { padding: 4px 10px; border-bottom: 1px dashed var(--border); }
+  .totals td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+  .totals tr.grand td { font-size: 18px; font-weight: 700; border-bottom: none; color: var(--accent); }
+
+  .stat-grid { display: flex; gap: 12px; flex-wrap: wrap; margin: 0 0 14px; }
+  .stat-box { flex: 1; min-width: 150px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
+  .stat-box .stat-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 2px; }
+  .stat-box .stat-value { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stat-box.warn .stat-value { color: var(--danger); }
+
+  .list-table { min-width: 760px; }
+  .list-table tr.clickable { cursor: pointer; }
+  .list-table tr.clickable:hover td { background: var(--accent-light); }
+  .list-wrap { overflow-x: auto; }
+
+  .modal-overlay { position: fixed; inset: 0; background: rgba(30, 40, 51, 0.45); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 1000; }
+  .modal-box { background: var(--surface); border-radius: var(--radius); width: 100%; max-width: 520px; max-height: 88vh; overflow-y: auto; padding: 20px; }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 10px; }
+  .modal-header h3 { margin: 0; font-size: 16px; font-weight: 700; }
+  .modal-close { background: none; border: none; font-size: 22px; line-height: 1; color: var(--text-secondary); cursor: pointer; padding: 4px 8px; }
+  .detail-table td { padding: 7px 4px; }
+  .detail-table td:first-child { width: 96px; color: var(--text-secondary); font-size: 13px; }
+  .pp-sec { font-size: 12px; color: var(--text-secondary); margin: 10px 0 4px; font-weight: 700; }
+  .pp-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; text-align: left; font-family: inherit; font-size: 15px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-primary); cursor: pointer; margin-bottom: 6px; }
+  .pp-item:hover, .pp-item.current { border-color: var(--accent); background: var(--accent-light); }
+  .pp-item .pp-sub { font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 55%; }
+  .chk-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 6px; cursor: pointer; }
+  .chk-item input { width: 18px; height: 18px; flex-shrink: 0; }
+  .chk-item .grow { flex: 1; min-width: 0; }
+  .chk-item.billed { opacity: 0.6; }
+
+  /* プレビュー */
+  #preview-modal .modal-box { max-width: 900px; padding: 16px; background: #E9EDEA; }
+  .preview-pages { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .preview-pages .pg-frame { box-shadow: 0 2px 10px rgba(0,0,0,0.15); background: #fff; }
+  .preview-actions { position: sticky; top: -16px; z-index: 2; background: #E9EDEA; padding: 6px 0 10px; }
+
+  .password-gate { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 2000; }
+  .password-gate-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 32px 28px; max-width: 320px; width: 100%; text-align: center; }
+  .password-gate-box h2 { font-size: 16px; font-weight: 700; margin: 0 0 16px; }
+  .password-gate-box input { width: 100%; font-family: inherit; font-size: 15px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); margin-bottom: 10px; }
+  .password-gate-box button { width: 100%; }
+
+  .toast { position: fixed; right: 16px; bottom: 16px; background: var(--text-primary); color: #fff; font-size: 13px; padding: 10px 14px; border-radius: 8px; z-index: 4000; opacity: 0; transform: translateY(8px); transition: opacity .2s, transform .2s; pointer-events: none; max-width: 80vw; }
+  .toast.show { opacity: 0.94; transform: translateY(0); }
+
+  .master-table td { padding: 6px 6px; }
+  .master-table .cell-input { min-width: 70px; }
+  .stamp-box { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .stamp-preview { width: 72px; height: 72px; border: 1px dashed var(--border); border-radius: 8px; display: grid; place-items: center; background: #fff; color: var(--text-secondary); font-size: 11px; overflow: hidden; }
+  .stamp-preview img { max-width: 100%; max-height: 100%; }
+  .chk-line { display: flex; gap: 16px; flex-wrap: wrap; font-size: 14px; }
+  .chk-line label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+  .status-line { font-size: 13px; padding: 8px 10px; border-radius: 6px; background: var(--bg); margin-bottom: 10px; }
+  .status-line.err { background: var(--danger-light); color: var(--danger); }
+
+  /* ===== 書類(A4 1ページ = 794×1123px) ===== */
+  .doc-page { width: 794px; height: 1123px; padding: 52px 56px 44px; background: #fff; color: #1d1d1d; position: relative; overflow: hidden;
+    font-family: 'Zen Kaku Gothic New', 'Hiragino Sans', 'Yu Gothic', sans-serif; font-size: 12px; line-height: 1.55; }
+  .doc-page * { box-sizing: border-box; }
+  .dp-top { display: flex; justify-content: space-between; align-items: flex-start; font-size: 11.5px; color: #333; }
+  .dp-top .no { text-align: right; line-height: 1.7; }
+  .dp-title { text-align: center; font-size: 26px; font-weight: 700; letter-spacing: 0.5em; margin: 6px 0 22px; padding-left: 0.5em; }
+  .dp-title-bar { height: 3px; width: 220px; margin: -16px auto 22px; border-radius: 2px; }
+  .dp-head { display: flex; justify-content: space-between; gap: 24px; align-items: flex-start; }
+  .dp-to { flex: 1; min-width: 0; }
+  .dp-to .name { font-size: 18px; font-weight: 700; border-bottom: 1.5px solid #333; padding-bottom: 3px; display: inline-block; min-width: 280px; }
+  .dp-to .name small { font-size: 14px; font-weight: 500; margin-left: 10px; }
+  .dp-to .addr { font-size: 11.5px; color: #333; margin-top: 4px; }
+  .dp-greet { margin-top: 14px; font-size: 12.5px; }
+  .dp-from { width: 270px; position: relative; font-size: 11.5px; line-height: 1.65; color: #222; }
+  .dp-from .co { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
+  .dp-from .reg { margin-top: 3px; font-size: 11px; }
+  .dp-stamp { position: absolute; right: -6px; top: 0px; width: 62px; height: 62px; object-fit: contain; opacity: 0.92; }
+  .dp-info { display: flex; gap: 18px; margin-top: 16px; align-items: stretch; }
+  .dp-info table { border-collapse: collapse; font-size: 12px; flex: 1; }
+  .dp-info td { border-bottom: 1px solid #bbb; padding: 4px 6px; }
+  .dp-info td.k { width: 90px; color: #444; white-space: nowrap; }
+  .dp-total { width: 270px; border: 2px solid #333; display: flex; flex-direction: column; justify-content: center; padding: 8px 12px; }
+  .dp-total .k { font-size: 12px; }
+  .dp-total .v { font-size: 24px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+  .dp-total .v small { font-size: 11px; font-weight: 500; margin-left: 4px; }
+  .dp-lines { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 11.5px; table-layout: fixed; }
+  .dp-lines th { border: 1px solid #888; padding: 5px 6px; font-weight: 500; font-size: 11px; }
+  .dp-lines td { border: 1px solid #aaa; padding: 5px 6px; height: 26px; word-break: break-all; }
+  .dp-lines td.r { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .dp-lines td.c { text-align: center; white-space: nowrap; }
+  .dp-lines tr.blank td { color: transparent; }
+  .dp-mark { font-size: 10px; margin-left: 3px; }
+  .dp-sum { display: flex; justify-content: space-between; gap: 18px; margin-top: 10px; align-items: flex-start; }
+  .dp-sum .note { font-size: 10.5px; color: #444; }
+  .dp-taxtbl { border-collapse: collapse; font-size: 11.5px; }
+  .dp-taxtbl th, .dp-taxtbl td { border: 1px solid #999; padding: 4px 10px; }
+  .dp-taxtbl th { font-weight: 500; font-size: 11px; }
+  .dp-taxtbl td.r { text-align: right; font-variant-numeric: tabular-nums; min-width: 96px; }
+  .dp-taxtbl tr.grand td { font-weight: 700; font-size: 13px; }
+  .dp-box { border: 1px solid #999; padding: 8px 12px; margin-top: 12px; font-size: 11.5px; white-space: pre-wrap; }
+  .dp-box .k { font-weight: 700; display: block; margin-bottom: 2px; white-space: normal; }
+  .dp-cont { display: flex; justify-content: space-between; font-size: 11px; color: #444; border-bottom: 1px solid #999; padding-bottom: 4px; margin-bottom: 4px; }
+  .dp-foot { position: absolute; left: 0; right: 0; bottom: 18px; text-align: center; font-size: 10px; color: #666; }
+  .doc-page.quote .dp-title-bar { background: #2B5683; }
+  .doc-page.delivery .dp-title-bar { background: #2E6B4E; }
+  .doc-page.invoice .dp-title-bar { background: #9A5B12; }
+  .doc-page.quote .dp-lines th, .doc-page.quote .dp-taxtbl th { background: #E6EDF6; }
+  .doc-page.delivery .dp-lines th, .doc-page.delivery .dp-taxtbl th { background: #E3EEE7; }
+  .doc-page.invoice .dp-lines th, .doc-page.invoice .dp-taxtbl th { background: #F5ECDD; }
+
+  #measure-area { position: absolute; left: -20000px; top: 0; }
+
+  #print-area { display: none; }
+  @media print {
+    @page { size: A4 portrait; margin: 0; }
+    body { background: #fff !important; border-top: none; margin: 0; }
+    body > *:not(#print-area) { display: none !important; }
+    #print-area { display: block !important; }
+    #print-area .doc-page { page-break-after: always; break-after: page; }
+    #print-area .doc-page:last-child { page-break-after: auto; break-after: auto; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+
+  @media (max-width: 600px) {
+    .app { padding: 16px 12px 40px; }
+    .app-header { flex-direction: column; align-items: stretch; }
+    .header-btns { align-self: flex-start; }
+    .card { padding: 14px; }
+    .tab-btn { padding: 10px 12px; font-size: 14px; }
+    .seg-btn { padding: 8px 14px; font-size: 14px; }
+    .totals table { min-width: 0; width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="password-gate" id="password-gate">
+  <div class="password-gate-box">
+    <h2>合言葉を入力してください</h2>
+    <input type="password" id="password-gate-input" placeholder="合言葉" autocomplete="off">
+    <div class="error-text" id="password-gate-error">合言葉が違います</div>
+    <button class="btn btn-primary" id="password-gate-submit">入る</button>
+  </div>
+</div>
+
+<div class="app">
+  <div class="app-header">
+    <div>
+      <h1>アクア農園 書類作成</h1>
+      <p>見積書・納品書・請求書をかんたんに作って、PDFで保存・共有できます</p>
+    </div>
+    <div class="header-btns">
+      <a class="btn-ghost" id="top-link" href="https://yakyuuhatomodachi-droid.github.io/">⌂ トップへ</a>
+      <button type="button" class="btn-ghost" id="refresh-data-btn">↻ 最新に更新</button>
+    </div>
+  </div>
+  <div class="demo-banner" id="demo-banner">お試しモードです。データはこの端末の中だけに保存されます(スプレッドシートにつなぐと本番になります)。</div>
+  <div class="warn-banner" id="company-warn"></div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="create">作成</button>
+    <button class="tab-btn" data-tab="list">書類一覧</button>
+    <button class="tab-btn" data-tab="master">マスタ</button>
+  </div>
+
+  <!-- ===== 作成 ===== -->
+  <div class="panel active" id="panel-create">
+    <div class="editing-bar" id="editing-bar">
+      <span id="editing-text"></span>
+      <button type="button" class="btn-ghost" id="new-doc-btn" style="margin-left:auto;">＋ 新しい書類を作る</button>
+    </div>
+    <div class="card">
+      <div class="seg" id="f-type">
+        <button type="button" class="seg-btn active" data-type="quote">見積書</button>
+        <button type="button" class="seg-btn" data-type="delivery">納品書</button>
+        <button type="button" class="seg-btn" data-type="invoice">請求書</button>
+      </div>
+
+      <div class="form-row">
+        <div class="field" style="min-width:240px; flex:2;"><label for="f-client">宛先(取引先)</label>
+          <div style="display:flex; gap:6px;">
+            <input id="f-client" type="text" list="client-list" autocomplete="off" placeholder="名前を入力、または一覧から選ぶ" style="flex:1; min-width:0;">
+            <button type="button" class="btn-ghost" id="f-client-pick" style="white-space:nowrap; flex-shrink:0;">一覧から選ぶ</button>
+          </div>
+        </div>
+        <div class="field" style="max-width:110px;"><label for="f-honor">敬称</label>
+          <select id="f-honor"><option value="御中">御中</option><option value="様">様</option><option value="殿">殿</option><option value="">なし</option></select>
+        </div>
+      </div>
+      <datalist id="client-list"></datalist>
+      <div class="hint" id="f-client-hint" style="margin:-4px 0 10px;"></div>
+      <div class="form-row">
+        <div class="field" style="max-width:140px;"><label for="f-zip">郵便番号</label><input id="f-zip" type="text" placeholder="868-0000"></div>
+        <div class="field" style="min-width:240px; flex:3;"><label for="f-addr">住所</label><input id="f-addr" type="text" placeholder="(なくてもかまいません)"></div>
+      </div>
+      <div class="form-row">
+        <div class="field" style="max-width:180px;"><label for="f-date">発行日</label><input id="f-date" type="date"></div>
+        <div class="field" style="max-width:180px;" id="f-extra-wrap"><label for="f-extra" id="f-extra-label">有効期限</label><input id="f-extra" type="date"></div>
+        <div class="field" style="max-width:200px;"><label for="f-no">書類番号</label><input id="f-no" type="text" placeholder="自動で付けます"></div>
+        <div class="field" style="min-width:220px; flex:2;"><label for="f-subject">件名</label><input id="f-subject" type="text" placeholder="例: 10月分 野菜代"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="btn-row" style="margin-bottom:10px;">
+        <h2 style="margin:0;">明細</h2>
+        <label class="hint" style="display:inline-flex; align-items:center; gap:4px; margin-left:8px;"><input type="checkbox" id="f-showdate"> 日付の列を入れる</label>
+        <span style="margin-left:auto;" class="hint">単価は</span>
+        <select id="f-pricemode" class="cell-select" style="width:auto;"><option value="excl">税抜で入力</option><option value="incl">税込で入力</option></select>
+      </div>
+      <div class="lines-wrap"><table class="lines-table" id="lines-table"></table></div>
+      <div class="btn-row" style="margin-top:10px;">
+        <button type="button" class="btn-ghost" id="add-line-btn">＋ 行を追加</button>
+        <button type="button" class="btn-ghost" id="pick-item-btn">品目から選んで追加</button>
+        <button type="button" class="btn-ghost" id="import-notes-btn" style="display:none;">納品書から明細を取り込む</button>
+      </div>
+      <div class="totals" id="totals"></div>
+    </div>
+
+    <div class="card">
+      <div class="form-row">
+        <div class="field"><label for="f-note">備考(書類の下に入ります)</label><textarea id="f-note" rows="3" placeholder="例: いつもありがとうございます。"></textarea></div>
+      </div>
+      <div class="error-text" id="f-error"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="save-btn">保存する</button>
+        <button class="btn btn-primary" id="save-pdf-btn" style="background:#245740;">保存してPDF・印刷</button>
+        <button class="btn-ghost" id="preview-btn">プレビュー(保存しない)</button>
+        <button class="btn-text" id="clear-btn" style="margin-left:auto;">入力を消す</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 書類一覧 ===== -->
+  <div class="panel" id="panel-list">
+    <div class="stat-grid" id="list-stats"></div>
+    <div class="card">
+      <div class="seg small" id="l-type">
+        <button type="button" class="seg-btn active" data-type="">すべて</button>
+        <button type="button" class="seg-btn" data-type="quote">見積書</button>
+        <button type="button" class="seg-btn" data-type="delivery">納品書</button>
+        <button type="button" class="seg-btn" data-type="invoice">請求書</button>
+      </div>
+      <div class="form-row" style="align-items:flex-end;">
+        <div class="field" style="max-width:180px;"><label for="l-month">発行月</label><select id="l-month"></select></div>
+        <div class="field" style="max-width:240px;"><label for="l-q">宛先・件名・番号で探す</label><input id="l-q" type="search" placeholder="例: ○○ストア"></div>
+        <div class="field" style="max-width:190px;"><label for="l-status">状態</label>
+          <select id="l-status"><option value="">すべて</option><option value="unpaid">未入金の請求書</option><option value="unbilled">請求していない納品書</option></select>
+        </div>
+      </div>
+      <p class="hint" style="margin:0 0 8px;">行を押すと、PDF・編集・複製・変換(見積書→納品書・請求書)・入金済みの記録ができます</p>
+      <div class="list-wrap" id="list-table"></div>
+    </div>
+  </div>
+
+  <!-- ===== マスタ ===== -->
+  <div class="panel" id="panel-master">
+    <div class="card">
+      <h2>自社の情報(書類の右上に入ります)</h2>
+      <p class="hint" style="margin-top:0;">空欄のところは、販売管理アプリの会社情報(うすい文字)を使います。書類作成だけで変えたいところは入力してください。</p>
+      <div class="form-row">
+        <div class="field"><label for="co-name">名前(屋号・会社名)</label><input id="co-name" type="text"></div>
+        <div class="field" style="max-width:220px;"><label for="co-person">担当者</label><input id="co-person" type="text"></div>
+      </div>
+      <div class="form-row">
+        <div class="field" style="max-width:140px;"><label for="co-zip">郵便番号</label><input id="co-zip" type="text"></div>
+        <div class="field" style="flex:3;"><label for="co-address">住所</label><input id="co-address" type="text"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label for="co-tel">電話</label><input id="co-tel" type="text"></div>
+        <div class="field"><label for="co-fax">FAX</label><input id="co-fax" type="text"></div>
+        <div class="field" style="flex:2;"><label for="co-email">メール</label><input id="co-email" type="text"></div>
+      </div>
+      <div class="form-row">
+        <div class="field" style="max-width:260px;"><label for="co-reg">インボイス登録番号</label><input id="co-reg" type="text" placeholder="T1234567890123"></div>
+        <div class="field" style="justify-content:flex-end;"><span class="hint" id="co-reg-hint">Tと13けたの数字です。請求書・納品書・見積書に入ります。</span></div>
+      </div>
+      <h3>振込先(請求書に入ります)</h3>
+      <div class="form-row">
+        <div class="field"><label for="co-bank">金融機関・支店</label><input id="co-bank" type="text" placeholder="例: 肥後銀行 免田支店"></div>
+        <div class="field"><label for="co-account">口座(種別・番号)</label><input id="co-account" type="text" placeholder="例: 普通 1234567"></div>
+        <div class="field"><label for="co-holder">口座名義</label><input id="co-holder" type="text" placeholder="例: アクアノウエン"></div>
+      </div>
+      <h3>印鑑(角印)の画像</h3>
+      <div class="stamp-box">
+        <div class="stamp-preview" id="stamp-preview">なし</div>
+        <div>
+          <div class="btn-row">
+            <button type="button" class="btn-ghost" id="stamp-upload-btn">画像を選ぶ</button>
+            <button type="button" class="btn-text-danger" id="stamp-remove-btn">画像を消す</button>
+            <input type="file" id="stamp-input" accept="image/*" style="display:none;">
+          </div>
+          <div class="hint" style="margin-top:4px;">背景が白か透明の、印鑑だけの画像(PNGがおすすめ)を選んでください。</div>
+          <div class="chk-line" style="margin-top:6px;" id="stamp-on"></div>
+        </div>
+      </div>
+      <div class="btn-row" style="margin-top:16px;">
+        <button type="button" class="btn btn-primary" id="co-save">自社の情報を保存</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>期限と番号</h2>
+      <div class="form-row" style="align-items:flex-end;">
+        <div class="field" style="max-width:160px;"><label for="set-pay-months">支払期限(発行日の)</label>
+          <select id="set-pay-months"><option value="0">当月</option><option value="1">翌月</option><option value="2">翌々月</option><option value="3">3か月後</option></select>
+        </div>
+        <div class="field" style="max-width:140px;"><label for="set-pay-type">の</label>
+          <select id="set-pay-type"><option value="endOfMonth">末日</option><option value="day">日にちを指定</option></select>
+        </div>
+        <div class="field" style="max-width:110px;" id="set-pay-day-wrap"><label for="set-pay-day">日</label><input id="set-pay-day" type="number" min="1" max="31" inputmode="numeric"></div>
+        <div class="field" style="max-width:170px;"><label for="set-valid">見積書の有効期限</label>
+          <select id="set-valid"><option value="14">発行日から2週間</option><option value="30">発行日から1か月</option><option value="60">発行日から2か月</option><option value="90">発行日から3か月</option></select>
+        </div>
+      </div>
+      <div class="form-row" style="align-items:flex-end;">
+        <div class="field" style="max-width:130px;"><label for="set-pre-quote">見積書の番号の頭</label><input id="set-pre-quote" type="text" maxlength="4"></div>
+        <div class="field" style="max-width:130px;"><label for="set-pre-delivery">納品書の番号の頭</label><input id="set-pre-delivery" type="text" maxlength="4"></div>
+        <div class="field" style="max-width:130px;"><label for="set-pre-invoice">請求書の番号の頭</label><input id="set-pre-invoice" type="text" maxlength="4"></div>
+        <span class="hint" style="margin-bottom:8px;" id="set-pre-sample"></span>
+      </div>
+      <h3>備考の初期文(新しく作るときに入ります)</h3>
+      <div class="form-row">
+        <div class="field"><label for="set-note-quote">見積書</label><textarea id="set-note-quote" rows="2"></textarea></div>
+        <div class="field"><label for="set-note-delivery">納品書</label><textarea id="set-note-delivery" rows="2"></textarea></div>
+        <div class="field"><label for="set-note-invoice">請求書</label><textarea id="set-note-invoice" rows="2"></textarea></div>
+      </div>
+      <button type="button" class="btn btn-primary" id="set-save">保存</button>
+    </div>
+
+    <div class="card">
+      <h2>販売管理とのつながり</h2>
+      <div class="status-line" id="nk-status"></div>
+      <div class="btn-row">
+        <button type="button" class="btn-ghost" id="nk-now">今すぐ読み込む</button>
+        <button type="button" class="btn-ghost" id="nk-file-btn">ファイルから取り込む</button>
+        <input type="file" id="nk-file" accept="application/json,.json" style="display:none;">
+      </div>
+      <p class="hint" style="margin-bottom:0;">販売管理の取引先・品目(単価)・会社情報を読み込んで、宛先や品目の選択肢に出します(読み込むだけで、販売管理のデータは変わりません)。開くたびに自動で読み込みます。<br>「ファイルから取り込む」は、販売管理のマスタで「バックアップをダウンロード」したファイル(nouka-backup_日付.json)を使う方法です。</p>
+    </div>
+
+    <div class="card">
+      <h2>取引先(この書類アプリだけの登録)</h2>
+      <p class="hint" style="margin-top:0;">販売管理にない宛先(個人のお客さま・見積だけの相手など)を登録できます。</p>
+      <div id="ms-client"></div>
+      <div class="form-row" style="margin-top:14px; align-items:flex-end;">
+        <div class="field" style="min-width:180px;"><label for="mc-name">名前</label><input id="mc-name" type="text" placeholder="例: ○○レストラン"></div>
+        <div class="field" style="max-width:90px;"><label for="mc-honor">敬称</label><select id="mc-honor"><option value="御中">御中</option><option value="様">様</option><option value="殿">殿</option><option value="">なし</option></select></div>
+        <div class="field" style="max-width:120px;"><label for="mc-zip">郵便番号</label><input id="mc-zip" type="text"></div>
+        <div class="field" style="min-width:200px; flex:2;"><label for="mc-addr">住所</label><input id="mc-addr" type="text"></div>
+        <button type="button" class="btn btn-primary" id="mc-add">+ 追加</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>品目(この書類アプリだけの登録)</h2>
+      <p class="hint" style="margin-top:0;">販売管理にない品目(送料・苗・加工品など)や、見積用の単価を登録できます。単価は税抜です。</p>
+      <div id="ms-item"></div>
+      <div class="form-row" style="margin-top:14px; align-items:flex-end;">
+        <div class="field" style="min-width:180px;"><label for="mi-name">品名</label><input id="mi-name" type="text" placeholder="例: 送料"></div>
+        <div class="field" style="max-width:90px;"><label for="mi-unit">単位</label><input id="mi-unit" type="text" placeholder="個"></div>
+        <div class="field" style="max-width:120px;"><label for="mi-price">単価(税抜)</label><input id="mi-price" type="number" inputmode="decimal" step="any"></div>
+        <div class="field" style="max-width:110px;"><label for="mi-rate">税率</label><select id="mi-rate"><option value="8">8%(軽減)</option><option value="10">10%</option></select></div>
+        <button type="button" class="btn btn-primary" id="mi-add">+ 追加</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>バックアップ・復元</h2>
+      <p class="hint" style="margin-top:0;">すべてのデータ(書類・取引先・品目・設定)を1つのファイルに保存できます。</p>
+      <div class="btn-row">
+        <button type="button" class="btn btn-primary" id="backup-download-btn">バックアップをダウンロード</button>
+        <button type="button" class="btn-ghost" id="backup-restore-btn">バックアップから復元</button>
+        <input type="file" id="backup-restore-input" accept="application/json,.json" style="display:none;">
+      </div>
+    </div>
+    <div class="card">
+      <h2>ログアウト</h2>
+      <p class="hint" style="margin-top:0;">この端末に保存された合言葉を消します。共用の端末で使ったときに押してください。</p>
+      <button type="button" class="btn-ghost" id="logout-btn">ログアウト</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div id="measure-area"></div>
+<div id="print-area"></div>
+
+<!-- 書類の詳細 -->
+<div class="modal-overlay" id="detail-modal" style="display:none;">
+  <div class="modal-box">
+    <div class="modal-header"><h3 id="detail-title"></h3><button class="modal-close" data-close="detail-modal" aria-label="閉じる">×</button></div>
+    <div id="detail-body"></div>
+  </div>
+</div>
+
+<!-- プレビュー・PDF -->
+<div class="modal-overlay" id="preview-modal" style="display:none;">
+  <div class="modal-box">
+    <div class="preview-actions">
+      <div class="modal-header" style="margin-bottom:8px;"><h3 id="preview-title">プレビュー</h3><button class="modal-close" data-close="preview-modal" aria-label="閉じる">×</button></div>
+      <div class="btn-row">
+        <button type="button" class="btn btn-primary" id="pv-pdf">PDFを保存</button>
+        <button type="button" class="btn-ghost" id="pv-share" style="display:none;">共有(LINE・メールなど)</button>
+        <button type="button" class="btn-ghost" id="pv-print">印刷</button>
+        <span class="hint" id="pv-status"></span>
+      </div>
+    </div>
+    <div class="preview-pages" id="preview-pages"></div>
+  </div>
+</div>
+
+<!-- 宛先を選ぶ -->
+<div class="modal-overlay" id="client-pick-modal" style="display:none;">
+  <div class="modal-box" style="max-width:460px;">
+    <div class="modal-header"><h3>宛先を選ぶ</h3><button class="modal-close" data-close="client-pick-modal" aria-label="閉じる">×</button></div>
+    <input id="cp-q" type="search" class="cell-input" placeholder="名前で探す" autocomplete="off" style="font-size:15px; padding:8px 10px; margin-bottom:6px;">
+    <div id="cp-list"></div>
+    <div class="btn-row" style="margin-top:12px; border-top:1px solid var(--border); padding-top:12px;">
+      <button type="button" class="btn-text" id="cp-master" style="margin-left:auto;">取引先を登録・編集する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 品目を選ぶ -->
+<div class="modal-overlay" id="item-pick-modal" style="display:none;">
+  <div class="modal-box" style="max-width:460px;">
+    <div class="modal-header"><h3>品目を選んで追加</h3><button class="modal-close" data-close="item-pick-modal" aria-label="閉じる">×</button></div>
+    <input id="ip-q" type="search" class="cell-input" placeholder="品名で探す" autocomplete="off" style="font-size:15px; padding:8px 10px; margin-bottom:6px;">
+    <div class="hint">押すたびに1行ずつ追加します。数量はあとで入れてください。</div>
+    <div id="ip-list"></div>
+    <div class="btn-row" style="margin-top:12px; border-top:1px solid var(--border); padding-top:12px;">
+      <button type="button" class="btn btn-primary" data-close="item-pick-modal">閉じる</button>
+      <button type="button" class="btn-text" id="ip-master" style="margin-left:auto;">品目を登録・編集する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 納品書から取り込む -->
+<div class="modal-overlay" id="notes-modal" style="display:none;">
+  <div class="modal-box" style="max-width:520px;">
+    <div class="modal-header"><h3>納品書から明細を取り込む</h3><button class="modal-close" data-close="notes-modal" aria-label="閉じる">×</button></div>
+    <div class="hint" id="nt-hint" style="margin-bottom:8px;"></div>
+    <div class="btn-row" style="margin-bottom:8px;">
+      <button type="button" class="btn-text" id="nt-all">すべて選ぶ</button>
+      <label class="hint" style="display:inline-flex; align-items:center; gap:4px; margin-left:auto;"><input type="checkbox" id="nt-show-billed"> 請求済みも表示</label>
+    </div>
+    <div id="nt-list"></div>
+    <div class="btn-row" style="margin-top:12px; border-top:1px solid var(--border); padding-top:12px;">
+      <button type="button" class="btn btn-primary" id="nt-ok">選んだ納品書を取り込む</button>
+      <span class="hint" id="nt-sum"></span>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="save-status-modal" style="display:none; z-index:3500;">
+  <div class="modal-box" style="max-width: 360px; text-align: center;">
+    <div id="save-status-icon" style="font-size: 32px; margin-bottom: 10px;"></div>
+    <div id="save-status-message" style="font-size: 15px; white-space:pre-wrap;"></div>
+    <button class="btn btn-primary" id="save-status-ok" style="margin-top: 16px; width: 100%;">OK</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="progress-modal" style="display:none; z-index:3600;">
+  <div class="modal-box" style="max-width: 360px; text-align: center;">
+    <div style="font-size:15px; font-weight:700; margin-bottom:8px;" id="progress-title">保存しています</div>
+    <div id="progress-message" style="font-size:14px;"></div>
+    <div class="hint" style="margin-top:8px;">終わるまで画面を閉じないでください</div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="confirm-modal" style="display:none; z-index:3000;">
+  <div class="modal-box">
+    <div class="modal-header"><h3>確認</h3></div>
+    <div id="confirm-modal-message" style="white-space:pre-wrap;"></div>
+    <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:16px;">
+      <button class="btn-ghost" id="confirm-modal-cancel">キャンセル</button>
+      <button class="btn btn-primary" id="confirm-modal-ok">削除する</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== 設定 =====
+// Googleスプレッドシート側(GAS)のウェブアプリURLをここに貼り付けます
+// (貼り付けるまでは「お試しモード」で動き、データはこの端末の中だけに保存されます)
+const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbzUXx_9fhFjrpjLBsq_65qxohYE3vx7wGFzltjPnUKGvF8BceJ5s1yGuKf5ootHIofU/exec';
+const DEMO = SHEET_API_URL.indexOf('__YOUR') === 0;
+
+// ほかのアプリとブラウザ保存が混ざらないよう、専用の名前を使う
+const PASSWORD_STORAGE_KEY = 'shorui_pw';
+const CACHE_KEY = 'shorui_cache_v1';
+const NOUKA_CACHE_KEY = 'shorui_nouka_v1';
+const APP_NAME = 'アクア農園書類作成';
+
+const TYPES = {
+  quote:    { label: '見積書', title: '御見積書', totalLabel: '御見積金額', greet: '下記のとおり御見積申し上げます。', extra: '有効期限', extraKey: 'validUntil' },
+  delivery: { label: '納品書', title: '納品書',   totalLabel: '合計金額',   greet: '下記のとおり納品いたしました。',   extra: '納品日',   extraKey: 'deliveryDate' },
+  invoice:  { label: '請求書', title: '御請求書', totalLabel: '御請求金額', greet: '下記のとおり御請求申し上げます。', extra: 'お支払期限', extraKey: 'dueDate' }
+};
+const DEFAULT_SETTINGS = {
+  company: {},
+  payment: null,           // { months, dayType, day } 未設定なら販売管理の設定を使う
+  validDays: 30,
+  prefix: { quote: 'Q', delivery: 'D', invoice: 'I' },
+  stampOn: { quote: true, delivery: false, invoice: true },
+  notes: { quote: '', delivery: '', invoice: '' }
+};
+
+// ===== 小さな道具 =====
+function escapeHtml(str) {
+  if (str === undefined || str === null) return '';
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function pad2(n) { return String(n).padStart(2, '0'); }
+function todayStr() {
+  // 日本時間の今日
+  const d = new Date(Date.now() + (new Date().getTimezoneOffset() + 540) * 60000);
+  return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+}
+function daysInMonth(y, m) { return new Date(Date.UTC(y, m, 0)).getUTCDate(); } // m は1〜12
+function addDays(s, n) { const [y, m, d] = s.split('-').map(Number); const t = new Date(Date.UTC(y, m - 1, d + n)); return t.getUTCFullYear() + '-' + pad2(t.getUTCMonth() + 1) + '-' + pad2(t.getUTCDate()); }
+function weekdayOf(s) { const [y, m, d] = s.split('-').map(Number); return ['日','月','火','水','木','金','土'][new Date(Date.UTC(y, m - 1, d)).getUTCDay()]; }
+function fmtJP(s) { if (!s) return ''; const [y, m, d] = s.split('-').map(Number); return y + '年' + m + '月' + d + '日'; }
+function fmtMD(s) { if (!s) return ''; const [, m, d] = s.split('-').map(Number); return m + '/' + d; }
+function fmtSlash(s) { return s ? s.replace(/-/g, '/') : ''; }
+function toNum(v) {
+  if (v === undefined || v === null) return 0;
+  const n = parseFloat(String(v).replace(/[,，\s¥円]/g, '').replace(/[０-９．－]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)));
+  return isNaN(n) ? 0 : n;
+}
+function numStr(n) { // 小数は必要なときだけ
+  if (n === '' || n === undefined || n === null) return '';
+  const v = Math.round(Number(n) * 100) / 100;
+  return v.toLocaleString('ja-JP', { maximumFractionDigits: 2 });
+}
+function yen(n) { const v = Math.round(n || 0); return (v < 0 ? '−¥' : '¥') + Math.abs(v).toLocaleString('ja-JP'); }
+function priceYen(n) { // 単価(小数あり)
+  const v = Math.round(Number(n || 0) * 100) / 100;
+  return (v < 0 ? '−¥' : '¥') + Math.abs(v).toLocaleString('ja-JP', { maximumFractionDigits: 2 });
+}
+
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+function showSaveModal(msg, ok) {
+  document.getElementById('save-status-icon').textContent = ok ? '✅' : '⚠️';
+  document.getElementById('save-status-message').textContent = msg;
+  document.getElementById('save-status-modal').style.display = 'flex';
+}
+document.getElementById('save-status-ok').addEventListener('click', () => { document.getElementById('save-status-modal').style.display = 'none'; });
+function showProgress(title, msg) {
+  document.getElementById('progress-title').textContent = title;
+  document.getElementById('progress-message').textContent = msg || '';
+  document.getElementById('progress-modal').style.display = 'flex';
+}
+function hideProgress() { document.getElementById('progress-modal').style.display = 'none'; }
+
+function showConfirm(message, okLabel) {
+  return new Promise(resolve => {
+    const modal = document.getElementById('confirm-modal');
+    const okBtn = document.getElementById('confirm-modal-ok');
+    const cancelBtn = document.getElementById('confirm-modal-cancel');
+    document.getElementById('confirm-modal-message').textContent = message;
+    okBtn.textContent = okLabel || '削除する';
+    okBtn.style.background = okLabel ? '' : 'var(--danger)';
+    modal.style.display = 'flex';
+    function done(r) {
+      modal.style.display = 'none';
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      modal.removeEventListener('click', onOverlay);
+      resolve(r);
+    }
+    function onOk() { done(true); }
+    function onCancel() { done(false); }
+    function onOverlay(e) { if (e.target === modal) done(false); }
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    modal.addEventListener('click', onOverlay);
+  });
+}
+
+document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => { document.getElementById(b.dataset.close).style.display = 'none'; }));
+['detail-modal', 'client-pick-modal', 'item-pick-modal', 'notes-modal', 'preview-modal'].forEach(id => {
+  document.getElementById(id).addEventListener('click', e => { if (e.target.id === id) e.target.style.display = 'none'; });
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  ['detail-modal', 'save-status-modal', 'client-pick-modal', 'item-pick-modal', 'notes-modal', 'preview-modal'].forEach(id => { document.getElementById(id).style.display = 'none'; });
+});
+
+// ===== 合言葉 =====
+function getStoredPassword() { try { return localStorage.getItem(PASSWORD_STORAGE_KEY) || ''; } catch (e) { return ''; } }
+function showPasswordGate(showError) {
+  document.getElementById('password-gate').style.display = 'flex';
+  document.getElementById('password-gate-input').value = '';
+  document.getElementById('password-gate-error').classList.toggle('show', !!showError);
+}
+(function initPasswordGate() {
+  const gate = document.getElementById('password-gate');
+  if (DEMO || getStoredPassword()) gate.style.display = 'none';
+  const input = document.getElementById('password-gate-input');
+  const errorEl = document.getElementById('password-gate-error');
+  const submitBtn = document.getElementById('password-gate-submit');
+  async function trySubmit() {
+    const pw = input.value;
+    if (!pw) return;
+    submitBtn.disabled = true;
+    try {
+      const res = await fetch(SHEET_API_URL + '?action=check&pw=' + encodeURIComponent(pw));
+      const data = await res.json();
+      if (data && data.ok === true) {
+        try { localStorage.setItem(PASSWORD_STORAGE_KEY, pw); } catch (e) { /* ignore */ }
+        location.reload();
+        return;
+      }
+      errorEl.textContent = '合言葉が違います';
+      errorEl.classList.add('show');
+    } catch (e) {
+      errorEl.textContent = '確認できませんでした。通信状況をご確認ください';
+      errorEl.classList.add('show');
+    }
+    submitBtn.disabled = false;
+  }
+  submitBtn.addEventListener('click', trySubmit);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') trySubmit(); });
+})();
+
+// ===== スプレッドシートとの通信(すべてGET) =====
+function pwParam() { return '&pw=' + encodeURIComponent(getStoredPassword()); }
+function handleUnauthorized() {
+  try { localStorage.removeItem(PASSWORD_STORAGE_KEY); } catch (e) { /* ignore */ }
+  showPasswordGate(true); // 画面のデータは消さない
+  const err = new Error('unauthorized');
+  err.unauthorized = true;
+  return err;
+}
+async function sheetFetchJson(query) {
+  const res = await fetch(SHEET_API_URL + '?' + query + pwParam());
+  if (!res.ok) throw new Error('通信に失敗しました(HTTP ' + res.status + ')');
+  const data = await res.json();
+  if (data && data.error === 'unauthorized') throw handleUnauthorized();
+  return data;
+}
+const MAX_QUERY_LEN = 3800; // 1回の通信で送る文字数の上限(長すぎると失敗するため)
+const PART_MARK = '§parts:';
+const partCounts = {};      // 長いデータを何行に分けて保存したか
+
+// 長い文字列を、通信1回ぶんの長さずつに分ける(文字の途中で切らない)
+function splitForUrl(str) {
+  const chunks = [];
+  let cur = '', len = 0;
+  for (const ch of str) {
+    const l = encodeURIComponent(ch).length;
+    if (len + l > MAX_QUERY_LEN && cur) { chunks.push(cur); cur = ''; len = 0; }
+    cur += ch; len += l;
+  }
+  if (cur) chunks.push(cur);
+  return chunks;
+}
+const sheetStorage = {
+  async rawSet(key, value) {
+    const data = await sheetFetchJson('action=set&key=' + encodeURIComponent(key) + '&value=' + encodeURIComponent(value));
+    if (!data.success) throw new Error('保存に失敗しました');
+  },
+  async rawDeleteMany(keys) {
+    if (!keys.length) return;
+    const data = await sheetFetchJson('action=deleteBatch&value=' + encodeURIComponent(JSON.stringify(keys)));
+    if (!data.success) throw new Error('削除に失敗しました');
+  },
+  // 長いデータ(明細の多い書類・印鑑の画像)は何行かに分けて保存する
+  async set(key, value) {
+    if (DEMO) return;
+    const old = partCounts[key] || 0;
+    if (encodeURIComponent(value).length <= MAX_QUERY_LEN) {
+      await this.rawSet(key, value);
+      if (old) { const ks = []; for (let i = 0; i < old; i++) ks.push(key + '#' + i); await this.rawDeleteMany(ks); }
+      partCounts[key] = 0;
+      return;
+    }
+    const chunks = splitForUrl(value);
+    for (let i = 0; i < chunks.length; i++) await this.rawSet(key + '#' + i, chunks[i]);
+    await this.rawSet(key, PART_MARK + chunks.length);
+    if (old > chunks.length) { const ks = []; for (let i = chunks.length; i < old; i++) ks.push(key + '#' + i); await this.rawDeleteMany(ks); }
+    partCounts[key] = chunks.length;
+  },
+  async del(key) {
+    if (DEMO) return;
+    const ks = [key];
+    for (let i = 0; i < (partCounts[key] || 0); i++) ks.push(key + '#' + i);
+    await this.rawDeleteMany(ks);
+    partCounts[key] = 0;
+  },
+  async getAll() {
+    const data = await sheetFetchJson('action=getAll');
+    if (!Array.isArray(data.rows)) throw new Error('データの形が正しくありません');
+    const map = {};
+    data.rows.forEach(([k, v]) => { map[String(k)] = String(v); });
+    const out = [];
+    Object.keys(map).forEach(k => {
+      if (k.indexOf('#') !== -1) return; // 分けた部分は親の行でまとめる
+      let v = map[k];
+      if (v.indexOf(PART_MARK) === 0) {
+        const n = parseInt(v.slice(PART_MARK.length), 10) || 0;
+        let joined = '';
+        for (let i = 0; i < n; i++) joined += map[k + '#' + i] || '';
+        partCounts[k] = n;
+        v = joined;
+      } else partCounts[k] = 0;
+      out.push([k, v]);
+    });
+    return out;
+  }
+};
+
+// ===== データ =====
+let docs = [];      // doc_<id>    書類
+let clients = [];   // client_<id> この書類アプリの取引先
+let items = [];     // item_<id>   この書類アプリの品目
+let settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS)); // settings(1行)
+let stamp = '';     // stamp       印鑑の画像(data URL)
+let loadedOnce = false;
+// 販売管理から読み込んだもの(読み取りだけ)
+let nouka = { customers: [], itemList: [], companyInfo: {}, fetchedAt: 0, source: '' };
+let noukaState = { msg: '', err: false };
+
+const PREFIX = { doc: 'doc_', client: 'client_', item: 'item_' };
+function keyOf(kind, rec) { return PREFIX[kind] + rec.id; }
+function mergeSettings(s) {
+  const d = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+  s = s || {};
+  return Object.assign(d, s, {
+    company: Object.assign({}, s.company || {}),
+    prefix: Object.assign(d.prefix, s.prefix || {}),
+    stampOn: Object.assign(d.stampOn, s.stampOn || {}),
+    notes: Object.assign(d.notes, s.notes || {})
+  });
+}
+
+async function loadData() {
+  if (DEMO) { loadedOnce = true; return true; }
+  try {
+    const rows = await sheetStorage.getAll();
+    const nd = [], nc = [], ni = [];
+    let ns = null, nst = '';
+    rows.forEach(([key, value]) => {
+      if (!value) return;
+      if (key === 'stamp') { nst = value; return; }
+      let obj;
+      try { obj = JSON.parse(value); } catch (e) { console.error('parse error', key); return; }
+      if (key.indexOf(PREFIX.doc) === 0) nd.push(obj);
+      else if (key.indexOf(PREFIX.client) === 0) nc.push(obj);
+      else if (key.indexOf(PREFIX.item) === 0) ni.push(obj);
+      else if (key === 'settings') ns = obj;
+    });
+    docs = nd; clients = nc; items = ni; settings = mergeSettings(ns); stamp = nst;
+    sortMasters();
+    loadedOnce = true;
+    saveToCache();
+    return true;
+  } catch (e) {
+    console.error(e);
+    // 失敗したときは画面のデータをそのまま残す(空で上書きしない)
+    if (!e.unauthorized) showToast('データの読み込みに失敗しました: ' + e.message);
+    return false;
+  }
+}
+function sortMasters() {
+  clients.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+  items.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+}
+function saveToCache() {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ docs, clients, items, settings, stamp, cachedAt: Date.now() })); }
+  catch (e) {
+    // 容量オーバーのときは印鑑の画像を外して保存
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify({ docs, clients, items, settings, stamp: '', cachedAt: Date.now() })); } catch (e2) { /* ignore */ }
+  }
+}
+function loadFromCache() {
+  try {
+    const c = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+    if (!c) return false;
+    docs = c.docs || []; clients = c.clients || []; items = c.items || []; settings = mergeSettings(c.settings); stamp = c.stamp || '';
+    sortMasters();
+    return true;
+  } catch (e) { return false; }
+}
+async function saveRecord(kind, rec) {
+  try { await sheetStorage.set(keyOf(kind, rec), JSON.stringify(rec)); saveToCache(); return true; }
+  catch (e) { if (!e.unauthorized) showToast('保存に失敗しました。もう一度お試しください'); return false; }
+}
+async function deleteRecord(kind, id) {
+  try { await sheetStorage.del(PREFIX[kind] + id); saveToCache(); return true; }
+  catch (e) { if (!e.unauthorized) showToast('削除に失敗しました。もう一度お試しください'); return false; }
+}
+async function saveSettings() {
+  try { await sheetStorage.set('settings', JSON.stringify(settings)); saveToCache(); return true; }
+  catch (e) { if (!e.unauthorized) showToast('保存に失敗しました。もう一度お試しください'); return false; }
+}
+
+// ===== 販売管理のデータ =====
+function loadNoukaCache() {
+  try { const c = JSON.parse(localStorage.getItem(NOUKA_CACHE_KEY) || 'null'); if (c && Array.isArray(c.customers)) nouka = Object.assign(nouka, c); } catch (e) { /* ignore */ }
+}
+function setNouka(data, source) {
+  nouka = {
+    customers: (data.customers || []).filter(c => c && c.id && String(c.name || '').trim()).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0)),
+    itemList: Array.isArray(data.itemList) ? data.itemList.filter(x => typeof x === 'string' && x.trim()) : [],
+    companyInfo: data.companyInfo && typeof data.companyInfo === 'object' ? data.companyInfo : (nouka.companyInfo || {}),
+    fetchedAt: Date.now(),
+    source
+  };
+  try { localStorage.setItem(NOUKA_CACHE_KEY, JSON.stringify(nouka)); } catch (e) { /* ignore */ }
+}
+function fmtTime(t) { const d = new Date(t); return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
+function setNoukaState(msg, err) { noukaState = { msg, err: !!err }; renderNoukaStatus(); }
+async function fetchNouka(interactive) {
+  if (DEMO) {
+    if (interactive) showSaveModal('お試しモードでは自動の読み込みはできません。「ファイルから取り込む」で試せます', false);
+    return;
+  }
+  const btn = document.getElementById('nk-now');
+  btn.disabled = true; btn.textContent = '読み込み中…';
+  try {
+    const data = await sheetFetchJson('action=nouka');
+    if (data && data.error === 'nouka_not_set') {
+      setNoukaState('販売管理のスプレッドシートがまだ設定されていません。GASの「スクリプト プロパティ」に NOUKA_SHEET_ID を追加してください(設定するまでは「ファイルから取り込む」でも使えます)', true);
+      if (interactive) showSaveModal('販売管理のスプレッドシートがまだ設定されていません', false);
+    } else if (data && data.error) {
+      setNoukaState('販売管理のスプレッドシートを開けませんでした。NOUKA_SHEET_ID が合っているか、同じGoogleアカウントのスプレッドシートか確かめてください', true);
+      if (interactive) showSaveModal('販売管理のスプレッドシートを開けませんでした', false);
+    } else if (!data || !Array.isArray(data.customers)) {
+      setNoukaState('書類作成のGASが古いままです。新しいGASに貼り替えて、新しいバージョンで再デプロイしてください', true);
+    } else {
+      setNouka(data, 'auto');
+      setNoukaState('');
+      if (interactive) showSaveModal('販売管理から読み込みました(取引先 ' + nouka.customers.length + '件・品目 ' + nouka.itemList.length + '件)', true);
+      renderAll();
+    }
+  } catch (e) {
+    if (!e.unauthorized) {
+      setNoukaState('販売管理を読み込めませんでした(' + e.message + ')。前回読み込んだ内容を使っています', true);
+      if (interactive) showSaveModal('販売管理を読み込めませんでした。通信状況を確かめてください', false);
+    }
+  }
+  btn.disabled = false; btn.textContent = '今すぐ読み込む';
+}
+function renderNoukaStatus() {
+  const el = document.getElementById('nk-status');
+  let msg = noukaState.msg;
+  if (!msg) {
+    msg = nouka.fetchedAt
+      ? '販売管理の取引先 ' + nouka.customers.length + '件・品目 ' + nouka.itemList.length + '件を使っています(' + fmtTime(nouka.fetchedAt) + ' ' + (nouka.source === 'file' ? 'ファイルから取り込み' : '読み込み') + ')'
+      : (DEMO ? 'お試しモードでは自動の読み込みは動きません。「ファイルから取り込む」で動きを試せます。' : 'まだ読み込んでいません。');
+  }
+  el.textContent = msg;
+  el.classList.toggle('err', !!noukaState.err);
+}
+document.getElementById('nk-now').addEventListener('click', () => fetchNouka(true));
+document.getElementById('nk-file-btn').addEventListener('click', () => document.getElementById('nk-file').click());
+document.getElementById('nk-file').addEventListener('change', async ev => {
+  const file = ev.target.files[0];
+  ev.target.value = '';
+  if (!file) return;
+  let data;
+  try { data = JSON.parse(await file.text()); } catch (e) { showSaveModal('ファイルを読み込めませんでした。販売管理のバックアップファイルか確認してください', false); return; }
+  if (!data || !Array.isArray(data.customers) || data.appName === APP_NAME) {
+    showSaveModal('このファイルは販売管理のバックアップではないようです。販売管理アプリのマスタにある「バックアップをダウンロード」で保存したファイルを選んでください', false); return;
+  }
+  setNouka({ customers: data.customers, itemList: data.itemList, companyInfo: data.companyInfo }, 'file');
+  setNoukaState('');
+  showSaveModal('販売管理の取引先 ' + nouka.customers.length + '件・品目 ' + nouka.itemList.length + '件を取り込みました', true);
+  renderAll();
+});
+
+// ===== 自社の情報・期限 =====
+const CO_FIELDS = ['name', 'person', 'zip', 'address', 'tel', 'fax', 'email', 'reg', 'bank', 'account', 'holder'];
+function noukaCo(field) {
+  const c = nouka.companyInfo || {};
+  const map = { name: c.name, person: c.contactPerson, zip: c.zip, address: c.address, tel: c.tel, fax: c.fax, bank: c.bankName, account: c.bankAccount, holder: c.bankHolder, email: c.email, reg: c.invoiceNumber || c.registrationNumber };
+  return map[field] ? String(map[field]) : '';
+}
+function company() {
+  const out = {};
+  CO_FIELDS.forEach(f => { out[f] = String((settings.company || {})[f] || '').trim() || noukaCo(f); });
+  return out;
+}
+function regNoValid(s) { return /^T\d{13}$/.test(String(s || '').replace(/[\s-]/g, '')); }
+function payment() {
+  if (settings.payment) return settings.payment;
+  const c = nouka.companyInfo || {};
+  return {
+    months: c.paymentMonths !== undefined ? parseInt(c.paymentMonths, 10) : 1,
+    dayType: c.paymentDayType === 'day' ? 'day' : 'endOfMonth',
+    day: parseInt(c.paymentDay, 10) || 25
+  };
+}
+function dueFrom(issue) {
+  const p = payment();
+  let [y, m] = issue.split('-').map(Number);
+  m += (p.months || 0);
+  while (m > 12) { m -= 12; y++; }
+  const last = daysInMonth(y, m);
+  const d = p.dayType === 'day' ? Math.min(p.day || last, last) : last;
+  return y + '-' + pad2(m) + '-' + pad2(d);
+}
+function validFrom(issue) { return addDays(issue, (parseInt(settings.validDays, 10) || 30) - 1); }
+function extraDefault(type, issue) {
+  if (type === 'quote') return validFrom(issue);
+  if (type === 'invoice') return dueFrom(issue);
+  return issue;
+}
+function renderCompanyWarn() {
+  const el = document.getElementById('company-warn');
+  const co = company();
+  const msgs = [];
+  if (loadedOnce && !co.name) msgs.push('自社の名前が未設定です。');
+  if (loadedOnce && !co.reg) msgs.push('インボイス登録番号が未設定です。');
+  if (msgs.length) {
+    el.innerHTML = escapeHtml(msgs.join(' ')) + '<button type="button" class="btn-ghost" id="warn-go">マスタで設定する</button>';
+    el.style.display = 'block';
+    document.getElementById('warn-go').addEventListener('click', () => { goTab('master'); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  } else el.style.display = 'none';
+}
+
+// ===== 取引先・品目の候補 =====
+// 宛先の参照: 'n:<販売管理の顧客ID>' / 'c:<この書類アプリの取引先ID>'
+function clientOptions() {
+  const list = [];
+  nouka.customers.forEach(c => list.push({ ref: 'n:' + c.id, name: String(c.name).trim(), honor: '御中', zip: c.zip || '', address: c.address || '', src: '販売管理', raw: c }));
+  clients.filter(c => !c.hidden).forEach(c => list.push({ ref: 'c:' + c.id, name: c.name, honor: c.honor === undefined ? '御中' : c.honor, zip: c.zip || '', address: c.address || '', src: 'この書類アプリ', raw: c }));
+  return list;
+}
+function clientByRef(ref) { return ref ? clientOptions().find(c => c.ref === ref) : null; }
+function clientByName(name) { const n = String(name || '').trim(); return n ? clientOptions().find(c => c.name === n) : null; }
+// 販売管理の取引先ごとの品目(単価・入数)
+function noukaCustomerItems(cust) {
+  if (!cust) return [];
+  let list = [];
+  if (Array.isArray(cust.itemSettings)) list = cust.itemSettings;
+  else if (cust.itemSettings && typeof cust.itemSettings === 'object') list = Object.keys(cust.itemSettings).map(k => Object.assign({ item: k }, cust.itemSettings[k]));
+  else if (cust.prices) list = Object.keys(cust.prices).map(k => ({ item: k, price: cust.prices[k] }));
+  return list.filter(e => e && e.item).map(e => {
+    const pack = toNum(e.casePack);
+    const hasPrice = e.price !== undefined && e.price !== null && e.price !== '';
+    return {
+      name: e.item + (pack ? '(' + numStr(pack) + '個入)' : ''),
+      unit: e.unit || '箱',
+      price: hasPrice ? (pack ? toNum(e.price) * pack : toNum(e.price)) : '',
+      rate: parseInt(e.taxRate, 10) === 10 ? 10 : 8
+    };
+  });
+}
+// 品目の候補(今の宛先の販売管理の単価 → この書類アプリの品目 → 販売管理の品目名)
+function itemOptions() {
+  const out = [], seen = {};
+  const c = clientByRef(draft.clientRef);
+  if (c && c.ref.indexOf('n:') === 0) {
+    noukaCustomerItems(c.raw).forEach(x => { if (!seen[x.name]) { seen[x.name] = true; out.push(Object.assign({ src: c.name + 'の単価' }, x)); } });
+  }
+  items.filter(x => !x.hidden).forEach(x => { if (!seen[x.name]) { seen[x.name] = true; out.push({ name: x.name, unit: x.unit || '', price: x.price === undefined ? '' : x.price, rate: x.rate === 10 ? 10 : 8, src: 'この書類アプリの品目' }); } });
+  nouka.itemList.forEach(n => { if (!seen[n]) { seen[n] = true; out.push({ name: n, unit: '箱', price: '', rate: 8, src: '販売管理の品目' }); } });
+  return out;
+}
+
+// ===== 計算(画面・一覧・PDFのすべてでこの関数を使う) =====
+function lineAmount(l) { return Math.round(toNum(l.qty) * toNum(l.price)); }
+function lineFilled(l) { return String(l.name || '').trim() !== '' || toNum(l.qty) !== 0 || toNum(l.price) !== 0; }
+// 税率ごとに合計し、消費税は税率ごとに1円未満切り捨て(インボイスの計算方法)
+function calcDoc(d) {
+  const lines = (d.lines || []).filter(lineFilled);
+  const by = { 8: 0, 10: 0 };
+  lines.forEach(l => { by[l.rate === 10 ? 10 : 8] += lineAmount(l); });
+  const r = { lines, rates: {} };
+  let base = 0, tax = 0, total = 0;
+  [10, 8].forEach(rate => {
+    const sum = by[rate];
+    let b, t;
+    if (d.priceMode === 'incl') { t = Math.floor(sum * rate / (100 + rate)); b = sum - t; }
+    else { b = sum; t = Math.floor(sum * rate / 100); }
+    r.rates[rate] = { base: b, tax: t, used: lines.some(l => (l.rate === 10 ? 10 : 8) === rate) };
+    base += b; tax += t; total += b + t;
+  });
+  r.base = base; r.tax = tax; r.total = total;
+  return r;
+}
+function docTotal(d) { return calcDoc(d).total; }
+
+// ===== 書類番号 =====
+function nextNo(type, issue) {
+  const pre = (settings.prefix[type] || '') + issue.slice(0, 7).replace('-', '') + '-';
+  let max = 0;
+  docs.forEach(d => { if (d.type === type && String(d.no || '').indexOf(pre) === 0) { const n = parseInt(String(d.no).slice(pre.length), 10); if (n > max) max = n; } });
+  return pre + String(max + 1).padStart(3, '0');
+}
+
+// ===== タブ =====
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    renderTab(btn.dataset.tab);
+  });
+});
+function activeTab() { const b = document.querySelector('.tab-btn.active'); return b ? b.dataset.tab : 'create'; }
+function goTab(tab) { document.querySelector('.tab-btn[data-tab="' + tab + '"]').click(); }
+function renderTab(tab) {
+  if (tab === 'create') renderForm();
+  if (tab === 'list') renderList();
+  if (tab === 'master') renderMaster();
+}
+function renderAll() { renderCompanyWarn(); renderTab(activeTab()); }
+
+// ===== 作成フォーム =====
+let draft = null;      // 入力中の書類
+let editingId = null;  // 保存済みの書類を直しているときのID
+
+function blankLine() { return { d: '', name: '', qty: '', unit: '', price: '', rate: 8 }; }
+function newDraft(type) {
+  const issue = todayStr();
+  type = type || (draft && draft.type) || 'quote';
+  const d = { type, no: '', issueDate: issue, clientRef: '', clientName: '', honor: '御中', clientZip: '', clientAddress: '', subject: '',
+    priceMode: 'excl', showDate: false, lines: [blankLine(), blankLine(), blankLine()], note: settings.notes[type] || '', fromNotes: [] };
+  d[TYPES[type].extraKey] = extraDefault(type, issue);
+  return d;
+}
+function setType(type) {
+  if (draft.type === type) return;
+  const oldType = draft.type;
+  // 期限・日付は種類ごとに入れ直す
+  delete draft[TYPES[oldType].extraKey];
+  draft.type = type;
+  draft[TYPES[type].extraKey] = extraDefault(type, draft.issueDate || todayStr());
+  // 備考が初期文のままなら、新しい種類の初期文に入れ替える
+  if (!draft.note || draft.note === (settings.notes[oldType] || '')) draft.note = settings.notes[type] || '';
+  if (!editingId) draft.no = '';
+  if (type !== 'invoice') draft.fromNotes = [];
+  renderForm();
+}
+document.querySelectorAll('#f-type .seg-btn').forEach(b => b.addEventListener('click', () => {
+  if (editingId && draft.type !== b.dataset.type) {
+    showToast('保存済みの書類は種類を変えられません。書類一覧の「変換」を使ってください');
+    return;
+  }
+  setType(b.dataset.type);
+}));
+
+function renderForm() {
+  if (!draft) draft = newDraft('quote');
+  const t = TYPES[draft.type];
+  document.querySelectorAll('#f-type .seg-btn').forEach(b => b.classList.toggle('active', b.dataset.type === draft.type));
+  document.getElementById('f-client').value = draft.clientName || '';
+  document.getElementById('f-honor').value = draft.honor === undefined ? '御中' : draft.honor;
+  document.getElementById('f-zip').value = draft.clientZip || '';
+  document.getElementById('f-addr').value = draft.clientAddress || '';
+  document.getElementById('f-date').value = draft.issueDate || '';
+  document.getElementById('f-extra-label').textContent = t.extra;
+  document.getElementById('f-extra').value = draft[t.extraKey] || '';
+  document.getElementById('f-no').value = draft.no || '';
+  document.getElementById('f-no').placeholder = '自動: ' + nextNo(draft.type, draft.issueDate || todayStr());
+  document.getElementById('f-subject').value = draft.subject || '';
+  document.getElementById('f-showdate').checked = !!draft.showDate;
+  document.getElementById('f-pricemode').value = draft.priceMode === 'incl' ? 'incl' : 'excl';
+  document.getElementById('f-note').value = draft.note || '';
+  document.getElementById('import-notes-btn').style.display = draft.type === 'invoice' ? '' : 'none';
+  const bar = document.getElementById('editing-bar');
+  if (editingId) {
+    bar.classList.add('show');
+    document.getElementById('editing-text').textContent = '保存済みの' + t.label + '(' + (draft.no || '') + ')を直しています。「保存する」で上書きします。';
+  } else bar.classList.remove('show');
+  document.getElementById('save-btn').textContent = editingId ? '上書き保存' : '保存する';
+  document.getElementById('save-pdf-btn').textContent = editingId ? '上書き保存してPDF・印刷' : '保存してPDF・印刷';
+  document.getElementById('f-error').classList.remove('show');
+  renderClientList();
+  renderClientHint();
+  renderLines();
+}
+function renderClientList() {
+  document.getElementById('client-list').innerHTML = clientOptions().map(c => `<option value="${escapeHtml(c.name)}">`).join('');
+}
+function renderClientHint() {
+  const el = document.getElementById('f-client-hint');
+  const c = clientByRef(draft.clientRef);
+  el.textContent = c ? '✓ ' + c.src + 'の取引先' : (draft.clientName ? '登録していない宛先です(このまま書類に使えます)' : '');
+}
+function applyClient(c) {
+  draft.clientRef = c.ref; draft.clientName = c.name; draft.honor = c.honor; draft.clientZip = c.zip; draft.clientAddress = c.address;
+  document.getElementById('f-client').value = c.name;
+  document.getElementById('f-honor').value = c.honor;
+  document.getElementById('f-zip').value = c.zip;
+  document.getElementById('f-addr').value = c.address;
+  renderClientHint();
+  renderItemDatalist();
+}
+document.getElementById('f-client').addEventListener('input', () => {
+  const v = document.getElementById('f-client').value;
+  draft.clientName = v.trim();
+  const c = clientByName(v);
+  if (c) applyClient(c); else { draft.clientRef = ''; renderClientHint(); }
+});
+document.getElementById('f-honor').addEventListener('change', e => { draft.honor = e.target.value; });
+document.getElementById('f-zip').addEventListener('input', e => { draft.clientZip = e.target.value.trim(); });
+document.getElementById('f-addr').addEventListener('input', e => { draft.clientAddress = e.target.value.trim(); });
+document.getElementById('f-date').addEventListener('change', e => {
+  const old = draft.issueDate;
+  draft.issueDate = e.target.value;
+  const k = TYPES[draft.type].extraKey;
+  // 期限が自動の値のままなら、発行日に合わせて動かす
+  if (draft.issueDate && (!draft[k] || draft[k] === extraDefault(draft.type, old || draft.issueDate))) {
+    draft[k] = extraDefault(draft.type, draft.issueDate);
+    document.getElementById('f-extra').value = draft[k];
+  }
+  document.getElementById('f-no').placeholder = '自動: ' + nextNo(draft.type, draft.issueDate || todayStr());
+});
+document.getElementById('f-extra').addEventListener('change', e => { draft[TYPES[draft.type].extraKey] = e.target.value; });
+document.getElementById('f-no').addEventListener('input', e => { draft.no = e.target.value.trim(); });
+document.getElementById('f-subject').addEventListener('input', e => { draft.subject = e.target.value; });
+document.getElementById('f-note').addEventListener('input', e => { draft.note = e.target.value; });
+document.getElementById('f-showdate').addEventListener('change', e => { draft.showDate = e.target.checked; renderLines(); });
+document.getElementById('f-pricemode').addEventListener('change', e => { draft.priceMode = e.target.value; renderLines(); });
+
+// ----- 明細 -----
+function renderItemDatalist() {
+  let dl = document.getElementById('item-list');
+  if (!dl) { dl = document.createElement('datalist'); dl.id = 'item-list'; document.body.appendChild(dl); }
+  dl.innerHTML = itemOptions().map(x => `<option value="${escapeHtml(x.name)}">`).join('');
+}
+function lineRowHtml(l, i) {
+  const sd = !!draft.showDate;
+  return `<tr data-i="${i}">
+      ${sd ? `<td class="c-date"><input class="cell-input" type="date" data-f="d" value="${escapeHtml(l.d || '')}"></td>` : ''}
+      <td><input class="cell-input" data-f="name" list="item-list" autocomplete="off" value="${escapeHtml(l.name || '')}" placeholder="品名"></td>
+      <td class="c-qty"><input class="cell-input num" data-f="qty" inputmode="decimal" value="${escapeHtml(l.qty)}"></td>
+      <td class="c-unit"><input class="cell-input" data-f="unit" value="${escapeHtml(l.unit || '')}"></td>
+      <td class="c-price"><input class="cell-input num" data-f="price" inputmode="decimal" value="${escapeHtml(l.price)}"></td>
+      <td class="c-rate"><select class="cell-select" data-f="rate"><option value="8" ${l.rate !== 10 ? 'selected' : ''}>8%軽減</option><option value="10" ${l.rate === 10 ? 'selected' : ''}>10%</option></select></td>
+      <td class="c-amt" data-amt>${lineFilled(l) ? yen(lineAmount(l)) : ''}</td>
+      <td class="c-op"><button type="button" class="icon-btn" data-up title="上へ" ${i === 0 ? 'disabled' : ''}>↑</button><button type="button" class="icon-btn del" data-del title="この行を消す">×</button></td>
+    </tr>`;
+}
+function bindLineRow(tr) {
+  const i = parseInt(tr.dataset.i, 10);
+  tr.querySelectorAll('[data-f]').forEach(el => {
+    const f = el.dataset.f;
+    const ev = el.tagName === 'SELECT' ? 'change' : 'input';
+    el.addEventListener(ev, () => {
+      const l = draft.lines[i];
+      if (!l) return;
+      if (f === 'rate') l.rate = parseInt(el.value, 10) === 10 ? 10 : 8;
+      else l[f] = el.value;
+      if (f === 'name') fillFromItem(i, tr);
+      tr.querySelector('[data-amt]').textContent = lineFilled(l) ? yen(lineAmount(l)) : '';
+      renderTotals();
+      // 最後の行に入力したら、空の行を1つ足す(入力中の欄はそのまま)
+      if (i === draft.lines.length - 1 && lineFilled(l)) appendLineRow();
+    });
+  });
+  tr.querySelector('[data-del]').addEventListener('click', () => {
+    draft.lines.splice(i, 1);
+    if (!draft.lines.length) draft.lines.push(blankLine());
+    renderLines();
+  });
+  tr.querySelector('[data-up]').addEventListener('click', () => {
+    if (i === 0) return;
+    const t = draft.lines[i - 1]; draft.lines[i - 1] = draft.lines[i]; draft.lines[i] = t;
+    renderLines();
+  });
+}
+function renderLines() {
+  renderItemDatalist();
+  const sd = !!draft.showDate;
+  const pLabel = draft.priceMode === 'incl' ? '単価(税込)' : '単価(税抜)';
+  const aLabel = draft.priceMode === 'incl' ? '金額(税込)' : '金額(税抜)';
+  const table = document.getElementById('lines-table');
+  table.innerHTML = `<thead><tr>${sd ? '<th class="c-date">日付</th>' : ''}<th>品名</th><th class="c-qty">数量</th><th class="c-unit">単位</th><th class="c-price">${pLabel}</th><th class="c-rate">税率</th><th class="c-amt">${aLabel}</th><th class="c-op"></th></tr></thead>
+    <tbody>${draft.lines.map(lineRowHtml).join('')}</tbody>`;
+  table.querySelectorAll('tr[data-i]').forEach(bindLineRow);
+  renderTotals();
+}
+function appendLineRow() {
+  const l = blankLine();
+  if (draft.showDate) { const last = draft.lines[draft.lines.length - 1]; l.d = (last && last.d) || ''; }
+  draft.lines.push(l);
+  const tbody = document.querySelector('#lines-table tbody');
+  const tmp = document.createElement('tbody');
+  tmp.innerHTML = lineRowHtml(l, draft.lines.length - 1);
+  const tr = tmp.firstElementChild;
+  tbody.appendChild(tr);
+  bindLineRow(tr);
+}
+// 品名を候補から選んだら、単位・単価・税率を入れる(空のところだけ)
+function fillFromItem(i, tr) {
+  const l = draft.lines[i];
+  const x = itemOptions().find(o => o.name === String(l.name || '').trim());
+  if (!x) return;
+  if (!l.unit && x.unit) { l.unit = x.unit; tr.querySelector('[data-f="unit"]').value = x.unit; }
+  if ((l.price === '' || l.price === undefined) && x.price !== '' && x.price !== undefined) {
+    let p = toNum(x.price);
+    if (draft.priceMode === 'incl') p = Math.round(p * (100 + x.rate) / 100);
+    l.price = String(Math.round(p * 100) / 100); tr.querySelector('[data-f="price"]').value = l.price;
+  }
+  l.rate = x.rate; tr.querySelector('[data-f="rate"]').value = String(x.rate);
+  if (l.qty === '' || l.qty === undefined) { l.qty = '1'; tr.querySelector('[data-f="qty"]').value = '1'; }
+}
+function renderTotals() {
+  const c = calcDoc(draft);
+  const ex = draft.priceMode === 'incl';
+  const rows = [];
+  [10, 8].forEach(rate => {
+    const r = c.rates[rate];
+    if (!r.used) return;
+    rows.push(`<tr><td>${rate}%対象${rate === 8 ? '(軽減)' : ''}</td><td>${yen(r.base)}<span class="hint">(税 ${yen(r.tax)})</span></td></tr>`);
+  });
+  document.getElementById('totals').innerHTML = `<table>
+    ${rows.join('')}
+    <tr><td>小計(税抜)</td><td>${yen(c.base)}</td></tr>
+    <tr><td>消費税${ex ? '(内税)' : ''}</td><td>${yen(c.tax)}</td></tr>
+    <tr class="grand"><td>合計(税込)</td><td>${yen(c.total)}</td></tr>
+  </table>`;
+}
+function addLines(newLines) {
+  // 末尾の空の行に入れていく
+  while (draft.lines.length && !lineFilled(draft.lines[draft.lines.length - 1])) draft.lines.pop();
+  draft.lines = draft.lines.concat(newLines);
+  draft.lines.push(blankLine());
+  renderLines();
+}
+document.getElementById('add-line-btn').addEventListener('click', () => { draft.lines.push(blankLine()); renderLines(); });
+
+// ----- 宛先を一覧から選ぶ -----
+function renderClientPick() {
+  const q = document.getElementById('cp-q').value.trim();
+  const all = clientOptions();
+  const wrap = document.getElementById('cp-list');
+  if (!all.length) { wrap.innerHTML = '<div class="empty-state">まだ取引先がありません。<br>マスタで販売管理を読み込むか、取引先を登録してください。</div>'; return; }
+  const list = all.filter(c => !q || c.name.indexOf(q) !== -1);
+  if (!list.length) { wrap.innerHTML = '<div class="empty-state">「' + escapeHtml(q) + '」に合う取引先はありません</div>'; return; }
+  const item = c => `<button type="button" class="pp-item ${c.ref === draft.clientRef ? 'current' : ''}" data-ref="${escapeHtml(c.ref)}"><span>${escapeHtml(c.name)}</span><span class="pp-sub">${escapeHtml(c.address || '')}</span></button>`;
+  let html = '';
+  if (!q) {
+    // 最近書類を作った宛先(5件)
+    const recent = [], seen = {};
+    docs.slice().sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0)).forEach(d => {
+      const c = d.clientRef && clientByRef(d.clientRef);
+      if (c && !seen[c.ref] && recent.length < 5) { seen[c.ref] = true; recent.push(c); }
+    });
+    if (recent.length && list.length > 6) html += '<div class="pp-sec">最近の宛先</div>' + recent.map(item).join('');
+  }
+  const n = list.filter(c => c.ref.indexOf('n:') === 0), o = list.filter(c => c.ref.indexOf('c:') === 0);
+  if (n.length) html += '<div class="pp-sec">販売管理の取引先</div>' + n.map(item).join('');
+  if (o.length) html += '<div class="pp-sec">この書類アプリの取引先</div>' + o.map(item).join('');
+  wrap.innerHTML = html;
+  wrap.querySelectorAll('[data-ref]').forEach(b => b.addEventListener('click', () => {
+    applyClient(clientByRef(b.dataset.ref));
+    document.getElementById('client-pick-modal').style.display = 'none';
+  }));
+}
+document.getElementById('f-client-pick').addEventListener('click', () => {
+  document.getElementById('cp-q').value = '';
+  renderClientPick();
+  document.getElementById('client-pick-modal').style.display = 'flex';
+});
+document.getElementById('cp-q').addEventListener('input', renderClientPick);
+document.getElementById('cp-master').addEventListener('click', () => {
+  document.getElementById('client-pick-modal').style.display = 'none';
+  goTab('master');
+  document.getElementById('ms-client').scrollIntoView({ behavior: 'smooth' });
+});
+
+// ----- 品目から選ぶ -----
+function renderItemPick() {
+  const q = document.getElementById('ip-q').value.trim();
+  const all = itemOptions();
+  const wrap = document.getElementById('ip-list');
+  if (!all.length) { wrap.innerHTML = '<div class="empty-state">品目がありません。マスタで販売管理を読み込むか、品目を登録してください。</div>'; return; }
+  const list = all.filter(x => !q || x.name.indexOf(q) !== -1);
+  if (!list.length) { wrap.innerHTML = '<div class="empty-state">見つかりません</div>'; return; }
+  const groups = {};
+  list.forEach(x => { (groups[x.src] = groups[x.src] || []).push(x); });
+  wrap.innerHTML = Object.keys(groups).map(src => `<div class="pp-sec">${escapeHtml(src)}</div>` + groups[src].map(x => {
+    const idx = all.indexOf(x);
+    const sub = (x.price !== '' ? priceYen(x.price) + (x.unit ? '/' + x.unit : '') + '(税抜)' : '単価なし') + ' ・' + x.rate + '%';
+    return `<button type="button" class="pp-item" data-ix="${idx}"><span>${escapeHtml(x.name)}</span><span class="pp-sub">${escapeHtml(sub)}</span></button>`;
+  }).join('')).join('');
+  wrap.querySelectorAll('[data-ix]').forEach(b => b.addEventListener('click', () => {
+    const x = all[parseInt(b.dataset.ix, 10)];
+    let p = x.price === '' ? '' : toNum(x.price);
+    if (p !== '' && draft.priceMode === 'incl') p = Math.round(p * (100 + x.rate) / 100);
+    addLines([{ d: draft.showDate ? (draft.issueDate || '') : '', name: x.name, qty: '1', unit: x.unit || '', price: p === '' ? '' : String(Math.round(p * 100) / 100), rate: x.rate }]);
+    showToast('「' + x.name + '」を追加しました');
+  }));
+}
+document.getElementById('pick-item-btn').addEventListener('click', () => {
+  document.getElementById('ip-q').value = '';
+  renderItemPick();
+  document.getElementById('item-pick-modal').style.display = 'flex';
+});
+document.getElementById('ip-q').addEventListener('input', renderItemPick);
+document.getElementById('ip-master').addEventListener('click', () => {
+  document.getElementById('item-pick-modal').style.display = 'none';
+  goTab('master');
+  document.getElementById('ms-item').scrollIntoView({ behavior: 'smooth' });
+});
+
+// ----- 納品書から取り込む(請求書) -----
+function sameClient(a, b) {
+  if (a.clientRef && b.clientRef) return a.clientRef === b.clientRef;
+  return String(a.clientName || '').trim() === String(b.clientName || '').trim();
+}
+function noteDate(n) { return n.deliveryDate || n.issueDate || ''; }
+function candidateNotes(showBilled) {
+  return docs.filter(n => n.type === 'delivery' && sameClient(n, draft)
+    && (showBilled || !n.billedBy || n.billedBy === editingId || draft.fromNotes.indexOf(n.id) !== -1)
+    && !(draft.fromNotes || []).includes(n.id))
+    .sort((a, b) => noteDate(a) < noteDate(b) ? -1 : 1);
+}
+function renderNotesPick() {
+  const show = document.getElementById('nt-show-billed').checked;
+  const list = candidateNotes(show);
+  document.getElementById('nt-hint').textContent = '宛先「' + draft.clientName + '」の納品書です。選んだ納品書の明細を、日付つきでこの請求書に入れます。';
+  const wrap = document.getElementById('nt-list');
+  if (!list.length) { wrap.innerHTML = '<div class="empty-state">取り込める納品書はありません' + (show ? '' : '<br><span class="hint">(請求済みの納品書は「請求済みも表示」で出せます)</span>') + '</div>'; updateNotesSum(); return; }
+  wrap.innerHTML = list.map(n => {
+    const billed = n.billedBy && n.billedBy !== editingId ? docs.find(x => x.id === n.billedBy) : null;
+    return `<label class="chk-item ${billed ? 'billed' : ''}"><input type="checkbox" data-nid="${n.id}" ${billed ? '' : 'checked'}>
+      <span class="grow"><b>${fmtMD(noteDate(n))}(${weekdayOf(noteDate(n))})</b> ${escapeHtml(n.no || '')}<br><span class="hint">${escapeHtml(calcDoc(n).lines.map(l => l.name).filter(Boolean).slice(0, 4).join('、'))}${billed ? ' ・請求済み(' + escapeHtml(billed.no || '') + ')' : ''}</span></span>
+      <span class="num">${yen(docTotal(n))}</span></label>`;
+  }).join('');
+  wrap.querySelectorAll('input[data-nid]').forEach(c => c.addEventListener('change', updateNotesSum));
+  updateNotesSum();
+}
+function updateNotesSum() {
+  const ids = [...document.querySelectorAll('#nt-list input[data-nid]:checked')].map(c => c.dataset.nid);
+  const sum = ids.reduce((a, id) => a + docTotal(docs.find(d => d.id === id)), 0);
+  document.getElementById('nt-sum').textContent = ids.length ? ids.length + '件・' + yen(sum) : '';
+}
+document.getElementById('import-notes-btn').addEventListener('click', () => {
+  if (!draft.clientName) { showToast('先に宛先を選んでください'); document.getElementById('f-client').focus(); return; }
+  document.getElementById('nt-show-billed').checked = false;
+  renderNotesPick();
+  document.getElementById('notes-modal').style.display = 'flex';
+});
+document.getElementById('nt-show-billed').addEventListener('change', renderNotesPick);
+document.getElementById('nt-all').addEventListener('click', () => { document.querySelectorAll('#nt-list input[data-nid]').forEach(c => { c.checked = true; }); updateNotesSum(); });
+document.getElementById('nt-ok').addEventListener('click', async () => {
+  const ids = [...document.querySelectorAll('#nt-list input[data-nid]:checked')].map(c => c.dataset.nid);
+  if (!ids.length) { showToast('納品書を選んでください'); return; }
+  const notes = ids.map(id => docs.find(d => d.id === id)).sort((a, b) => noteDate(a) < noteDate(b) ? -1 : 1);
+  const hasLines = draft.lines.some(lineFilled);
+  if (!hasLines) draft.priceMode = notes[0].priceMode === 'incl' ? 'incl' : 'excl';
+  const add = [];
+  notes.forEach(n => {
+    calcDoc(n).lines.forEach(l => {
+      let p = l.price;
+      // 単価の入れ方(税抜・税込)が違うときは合わせる
+      const nm = n.priceMode === 'incl' ? 'incl' : 'excl';
+      if (nm !== draft.priceMode && p !== '') {
+        const rate = l.rate === 10 ? 10 : 8;
+        p = String(Math.round((nm === 'incl' ? toNum(p) * 100 / (100 + rate) : toNum(p) * (100 + rate) / 100) * 100) / 100);
+      }
+      add.push({ d: noteDate(n), name: l.name, qty: l.qty, unit: l.unit, price: p, rate: l.rate === 10 ? 10 : 8 });
+    });
+  });
+  draft.showDate = true;
+  draft.fromNotes = (draft.fromNotes || []).concat(ids.filter(id => !draft.fromNotes.includes(id)));
+  if (!draft.subject) {
+    const months = [...new Set(notes.map(n => parseInt(noteDate(n).slice(5, 7), 10)))];
+    draft.subject = months.length === 1 ? months[0] + '月分' : months.join('・') + '月分';
+  }
+  document.getElementById('notes-modal').style.display = 'none';
+  addLines(add);
+  document.getElementById('f-showdate').checked = true;
+  document.getElementById('f-subject').value = draft.subject;
+  document.getElementById('f-pricemode').value = draft.priceMode;
+  showToast('納品書 ' + notes.length + '件の明細を取り込みました。保存すると、その納品書は「請求済み」になります');
+});
+
+// ----- 保存 -----
+function validateDraft() {
+  const errs = [];
+  if (!String(draft.clientName || '').trim()) errs.push('宛先を入力してください');
+  if (!draft.issueDate) errs.push('発行日を選んでください');
+  const lines = draft.lines.filter(lineFilled);
+  if (!lines.length) errs.push('明細を1行以上入力してください');
+  if (lines.some(l => !String(l.name || '').trim())) errs.push('品名が空の行があります');
+  return errs;
+}
+function cleanDraft() {
+  const d = JSON.parse(JSON.stringify(draft));
+  d.clientName = String(d.clientName || '').trim();
+  d.lines = d.lines.filter(lineFilled).map(l => ({ d: d.showDate ? (l.d || '') : '', name: String(l.name || '').trim(), qty: String(l.qty === undefined ? '' : l.qty).trim(), unit: String(l.unit || '').trim(), price: String(l.price === undefined ? '' : l.price).trim(), rate: l.rate === 10 ? 10 : 8 }));
+  // 種類に合わない日付は持たない
+  Object.keys(TYPES).forEach(t => { if (t !== d.type) delete d[TYPES[t].extraKey]; });
+  if (d.type !== 'invoice') delete d.fromNotes;
+  return d;
+}
+async function saveDraft() {
+  const errs = validateDraft();
+  const errEl = document.getElementById('f-error');
+  if (errs.length) { errEl.textContent = errs.join(' / '); errEl.classList.add('show'); return null; }
+  errEl.classList.remove('show');
+  const d = cleanDraft();
+  if (!d.no) d.no = nextNo(d.type, d.issueDate);
+  else if (docs.some(x => x.no === d.no && x.id !== editingId && x.type === d.type)) {
+    if (!(await showConfirm('書類番号「' + d.no + '」は、ほかの' + TYPES[d.type].label + 'ですでに使っています。このまま保存しますか？', '保存する'))) return null;
+  }
+  let rec;
+  const wasEditing = !!editingId;
+  if (editingId) {
+    rec = docs.find(x => x.id === editingId);
+    if (!rec) { editingId = null; return saveDraft(); }
+    const keep = { id: rec.id, createdAt: rec.createdAt, billedBy: rec.billedBy, paidAt: rec.paidAt, convertedTo: rec.convertedTo, fromId: rec.fromId };
+    Object.keys(rec).forEach(k => delete rec[k]);
+    Object.assign(rec, d, keep, { updatedAt: Date.now() });
+    Object.keys(rec).forEach(k => { if (rec[k] === undefined) delete rec[k]; });
+  } else {
+    rec = Object.assign({}, d, { id: uid(), createdAt: Date.now() });
+    if (draft.fromId) rec.fromId = draft.fromId;
+    docs.push(rec);
+  }
+  // 納品書の「請求済み」をつける・外す
+  const touched = [];
+  if (rec.type === 'invoice') {
+    docs.forEach(n => {
+      if (n.type !== 'delivery') return;
+      const should = (rec.fromNotes || []).includes(n.id);
+      if (should && n.billedBy !== rec.id) { n.billedBy = rec.id; touched.push(n); }
+      else if (!should && n.billedBy === rec.id) { delete n.billedBy; touched.push(n); }
+    });
+  }
+  // 見積書から変換したときは、元の見積書に印をつける
+  if (!wasEditing && rec.fromId) {
+    const src = docs.find(x => x.id === rec.fromId);
+    if (src) { src.convertedTo = (src.convertedTo || []).concat([rec.id]); touched.push(src); }
+  }
+  showProgress('保存しています', '');
+  let ok = await saveRecord('doc', rec);
+  for (const n of touched) { if (ok) ok = await saveRecord('doc', n); }
+  hideProgress();
+  editingId = rec.id;
+  draft = JSON.parse(JSON.stringify(rec));
+  draft.lines.push(blankLine());
+  if (!draft.fromNotes) draft.fromNotes = [];
+  renderForm();
+  if (!ok) { showSaveModal('保存できませんでした。通信状況を確認して、もう一度「保存する」を押してください', false); return null; }
+  return rec;
+}
+document.getElementById('save-btn').addEventListener('click', async () => {
+  const wasEditing = !!editingId;
+  const rec = await saveDraft();
+  if (rec) showSaveModal((wasEditing ? '上書き保存しました' : '保存しました') + '\n' + TYPES[rec.type].label + ' ' + rec.no + '\n' + rec.clientName + ' ' + yen(docTotal(rec)), true);
+});
+document.getElementById('save-pdf-btn').addEventListener('click', async () => {
+  const rec = await saveDraft();
+  if (rec) { showToast('保存しました(' + rec.no + ')'); openPreview(rec); }
+});
+document.getElementById('preview-btn').addEventListener('click', () => {
+  if (!draft.lines.some(lineFilled)) { showToast('明細を入れるとプレビューできます'); return; }
+  const d = cleanDraft();
+  if (!d.no) d.no = nextNo(d.type, d.issueDate || todayStr());
+  openPreview(d, true);
+});
+function startNew(type) {
+  editingId = null;
+  draft = newDraft(type);
+  renderForm();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+document.getElementById('new-doc-btn').addEventListener('click', () => startNew(draft.type));
+document.getElementById('clear-btn').addEventListener('click', async () => {
+  if (!(await showConfirm(editingId ? '編集をやめて、新しい書類の入力に戻りますか？(保存済みの内容は消えません)' : '入力した内容を消しますか？', editingId ? '新しく作る' : '消す'))) return;
+  startNew(draft.type);
+});
+
+// 保存済みの書類を開いて直す
+function editDoc(id) {
+  const d = docs.find(x => x.id === id);
+  if (!d) return;
+  editingId = id;
+  draft = JSON.parse(JSON.stringify(d));
+  if (!draft.lines) draft.lines = [];
+  draft.lines.push(blankLine());
+  if (!draft.fromNotes) draft.fromNotes = [];
+  goTab('create');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+// 複製・変換(新しい書類として開く)
+function copyDoc(id, toType) {
+  const s = docs.find(x => x.id === id);
+  if (!s) return;
+  const type = toType || s.type;
+  const d = newDraft(type);
+  ['clientRef', 'clientName', 'honor', 'clientZip', 'clientAddress', 'subject', 'priceMode', 'showDate'].forEach(k => { if (s[k] !== undefined) d[k] = s[k]; });
+  d.lines = (s.lines || []).map(l => Object.assign({}, l)).concat([blankLine()]);
+  if (toType && toType !== s.type) {
+    d.fromId = s.id;
+    if (s.note && s.note !== settings.notes[s.type]) d.note = s.note;
+  } else d.note = s.note || d.note;
+  editingId = null;
+  draft = d;
+  goTab('create');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  showToast(toType && toType !== s.type ? TYPES[s.type].label + 'の内容で' + TYPES[type].label + 'を作ります。確かめて「保存する」を押してください' : '同じ内容を入れました。日付などを確かめて「保存する」を押してください');
+}
+
+// ===== 書類一覧 =====
+let lType = '';
+document.querySelectorAll('#l-type .seg-btn').forEach(b => b.addEventListener('click', () => {
+  lType = b.dataset.type;
+  document.querySelectorAll('#l-type .seg-btn').forEach(x => x.classList.toggle('active', x === b));
+  renderList();
+}));
+['l-month', 'l-status'].forEach(id => document.getElementById(id).addEventListener('change', renderList));
+document.getElementById('l-q').addEventListener('input', renderList);
+function docStatus(d) {
+  if (d.type === 'invoice') return d.paidAt ? '<span class="tag paid">入金済み</span>' : '<span class="tag unpaid">未入金</span>';
+  if (d.type === 'delivery') return d.billedBy ? '<span class="tag done">請求済み</span>' : '<span class="hint">未請求</span>';
+  if (d.convertedTo && d.convertedTo.length) return '<span class="tag done">変換済み</span>';
+  if (d.validUntil && d.validUntil < todayStr()) return '<span class="hint">期限切れ</span>';
+  return '';
+}
+function sortedDocs() {
+  return docs.slice().sort((a, b) => a.issueDate !== b.issueDate ? (a.issueDate < b.issueDate ? 1 : -1) : String(b.no || '').localeCompare(String(a.no || '')));
+}
+function renderList() {
+  // 月の選択肢
+  const sel = document.getElementById('l-month');
+  const cur = sel.value;
+  const months = [...new Set(docs.map(d => (d.issueDate || '').slice(0, 7)).filter(Boolean))].sort().reverse();
+  sel.innerHTML = '<option value="">すべての月</option>' + months.map(m => `<option value="${m}">${m.slice(0, 4)}年${parseInt(m.slice(5), 10)}月</option>`).join('');
+  if ([...sel.options].some(o => o.value === cur)) sel.value = cur;
+  // 集計
+  const thisMonth = todayStr().slice(0, 7);
+  const inv = docs.filter(d => d.type === 'invoice');
+  const unpaid = inv.filter(d => !d.paidAt);
+  const unbilled = docs.filter(d => d.type === 'delivery' && !d.billedBy);
+  document.getElementById('list-stats').innerHTML = `
+    <div class="stat-box"><div class="stat-label">今月の請求額</div><div class="stat-value">${yen(inv.filter(d => (d.issueDate || '').slice(0, 7) === thisMonth).reduce((a, d) => a + docTotal(d), 0))}</div></div>
+    <div class="stat-box ${unpaid.length ? 'warn' : ''}"><div class="stat-label">未入金の請求書(${unpaid.length}件)</div><div class="stat-value">${yen(unpaid.reduce((a, d) => a + docTotal(d), 0))}</div></div>
+    <div class="stat-box"><div class="stat-label">請求していない納品書(${unbilled.length}件)</div><div class="stat-value">${yen(unbilled.reduce((a, d) => a + docTotal(d), 0))}</div></div>`;
+  const m = sel.value, q = document.getElementById('l-q').value.trim().toLowerCase(), st = document.getElementById('l-status').value;
+  const list = sortedDocs().filter(d => (!lType || d.type === lType) && (!m || (d.issueDate || '').slice(0, 7) === m)
+    && (!q || ((d.clientName || '') + ' ' + (d.subject || '') + ' ' + (d.no || '')).toLowerCase().indexOf(q) !== -1)
+    && (!st || (st === 'unpaid' ? d.type === 'invoice' && !d.paidAt : d.type === 'delivery' && !d.billedBy)));
+  const wrap = document.getElementById('list-table');
+  if (!list.length) { wrap.innerHTML = '<div class="empty-state">' + (docs.length ? '条件に合う書類はありません' : 'まだ書類はありません。「作成」タブから作れます') + '</div>'; return; }
+  const total = list.reduce((a, d) => a + docTotal(d), 0);
+  wrap.innerHTML = `<table class="list-table"><thead><tr><th>発行日</th><th>種類</th><th>番号</th><th>宛先</th><th>件名</th><th class="num">金額(税込)</th><th>状態</th><th></th></tr></thead>
+    <tbody>${list.map(d => `<tr class="clickable" data-id="${d.id}">
+      <td style="white-space:nowrap;">${fmtSlash(d.issueDate)}</td>
+      <td><span class="tag ${d.type}">${TYPES[d.type].label}</span></td>
+      <td style="white-space:nowrap;">${escapeHtml(d.no || '')}</td>
+      <td>${escapeHtml(d.clientName || '')}</td>
+      <td>${escapeHtml(d.subject || '')}</td>
+      <td class="num" style="white-space:nowrap;">${yen(docTotal(d))}</td>
+      <td style="white-space:nowrap;">${docStatus(d)}</td>
+      <td class="row-actions"><button class="btn-text" data-pdf="${d.id}">PDF</button></td>
+    </tr>`).join('')}</tbody>
+    <tfoot><tr><td colspan="5" class="hint">${list.length}件</td><td class="num"><b>${yen(total)}</b></td><td colspan="2"></td></tr></tfoot></table>`;
+  wrap.querySelectorAll('tr.clickable').forEach(tr => tr.addEventListener('click', ev => {
+    if (ev.target.closest('[data-pdf]')) return;
+    openDetail(tr.dataset.id);
+  }));
+  wrap.querySelectorAll('[data-pdf]').forEach(b => b.addEventListener('click', () => openPreview(docs.find(d => d.id === b.dataset.pdf))));
+}
+function openDetail(id) {
+  const d = docs.find(x => x.id === id);
+  if (!d) return;
+  const t = TYPES[d.type];
+  const c = calcDoc(d);
+  document.getElementById('detail-title').innerHTML = `<span class="tag ${d.type}">${t.label}</span> ${escapeHtml(d.no || '')}`;
+  const rel = [];
+  if (d.fromId) { const s = docs.find(x => x.id === d.fromId); if (s) rel.push('元の' + TYPES[s.type].label + ': ' + s.no); }
+  (d.convertedTo || []).forEach(cid => { const x = docs.find(y => y.id === cid); if (x) rel.push(TYPES[x.type].label + 'に変換: ' + x.no); });
+  if (d.billedBy) { const x = docs.find(y => y.id === d.billedBy); if (x) rel.push('請求書: ' + x.no); }
+  if (d.type === 'invoice' && (d.fromNotes || []).length) rel.push('取り込んだ納品書: ' + d.fromNotes.length + '件');
+  const body = document.getElementById('detail-body');
+  body.innerHTML = `<table class="detail-table"><tbody>
+      <tr><td>宛先</td><td><b>${escapeHtml(d.clientName)}</b> ${escapeHtml(d.honor || '')}</td></tr>
+      <tr><td>発行日</td><td>${fmtJP(d.issueDate)}</td></tr>
+      ${d[t.extraKey] ? `<tr><td>${t.extra}</td><td>${fmtJP(d[t.extraKey])}</td></tr>` : ''}
+      ${d.subject ? `<tr><td>件名</td><td>${escapeHtml(d.subject)}</td></tr>` : ''}
+      <tr><td>金額</td><td style="font-size:20px; font-weight:700;">${yen(c.total)} <span class="hint">(うち消費税 ${yen(c.tax)})</span></td></tr>
+      <tr><td>明細</td><td>${c.lines.length}行 <span class="hint">${escapeHtml(c.lines.slice(0, 3).map(l => l.name).join('、'))}${c.lines.length > 3 ? ' ほか' : ''}</span></td></tr>
+      ${d.type === 'invoice' ? `<tr><td>入金</td><td>${d.paidAt ? '入金済み(' + fmtSlash(d.paidAt) + ')' : '<span style="color:var(--danger)">未入金</span>'}</td></tr>` : ''}
+      ${rel.length ? `<tr><td>つながり</td><td class="hint">${rel.map(escapeHtml).join('<br>')}</td></tr>` : ''}
+    </tbody></table>
+    <div class="btn-row" style="margin-top:14px;">
+      <button class="btn btn-primary" id="dt-pdf">PDF・印刷</button>
+      <button class="btn-ghost" id="dt-edit">直す</button>
+      <button class="btn-ghost" id="dt-copy">複製して新しく作る</button>
+    </div>
+    <div class="btn-row" style="margin-top:10px;">
+      ${d.type === 'quote' ? '<button class="btn-ghost" id="dt-to-delivery">→ 納品書にする</button><button class="btn-ghost" id="dt-to-invoice">→ 請求書にする</button>' : ''}
+      ${d.type === 'delivery' ? '<button class="btn-ghost" id="dt-to-invoice">→ この納品書で請求書を作る</button>' : ''}
+      ${d.type === 'invoice' ? `<button class="btn-ghost" id="dt-paid">${d.paidAt ? '未入金に戻す' : '✓ 入金済みにする'}</button>` : ''}
+      <button class="btn-ghost btn-danger" id="dt-del" style="margin-left:auto;">削除</button>
+    </div>`;
+  const close = () => { document.getElementById('detail-modal').style.display = 'none'; };
+  document.getElementById('dt-pdf').addEventListener('click', () => { close(); openPreview(d); });
+  document.getElementById('dt-edit').addEventListener('click', () => { close(); editDoc(id); });
+  document.getElementById('dt-copy').addEventListener('click', () => { close(); copyDoc(id); });
+  const toD = document.getElementById('dt-to-delivery'); if (toD) toD.addEventListener('click', () => { close(); copyDoc(id, 'delivery'); });
+  const toI = document.getElementById('dt-to-invoice');
+  if (toI) toI.addEventListener('click', () => {
+    close();
+    copyDoc(id, 'invoice');
+    if (d.type === 'delivery') {
+      // 納品書から作るときは、日付つきの明細にして「請求済み」につなぐ
+      draft.fromNotes = [d.id]; draft.fromId = undefined; draft.showDate = true;
+      draft.lines = calcDoc(d).lines.map(l => Object.assign({}, l, { d: noteDate(d) })).concat([blankLine()]);
+      renderForm();
+    }
+  });
+  const paid = document.getElementById('dt-paid');
+  if (paid) paid.addEventListener('click', async () => {
+    if (d.paidAt) delete d.paidAt; else d.paidAt = todayStr();
+    renderList();
+    openDetail(id);
+    if (await saveRecord('doc', d)) showToast(d.paidAt ? '入金済みにしました' : '未入金に戻しました');
+  });
+  document.getElementById('dt-del').addEventListener('click', async () => {
+    if (await deleteDoc(id)) close();
+  });
+  document.getElementById('detail-modal').style.display = 'flex';
+}
+async function deleteDoc(id) {
+  const d = docs.find(x => x.id === id);
+  if (!d) return false;
+  let extra = '';
+  if (d.type === 'invoice' && (d.fromNotes || []).length) extra = '\n取り込んだ納品書(' + d.fromNotes.length + '件)は「未請求」に戻ります。';
+  if (!(await showConfirm(TYPES[d.type].label + ' ' + (d.no || '') + '(' + d.clientName + ' ' + yen(docTotal(d)) + ')を削除しますか？' + extra))) return false;
+  docs = docs.filter(x => x.id !== id);
+  const touched = [];
+  docs.forEach(x => {
+    if (x.billedBy === id) { delete x.billedBy; touched.push(x); }
+    if ((x.convertedTo || []).includes(id)) { x.convertedTo = x.convertedTo.filter(y => y !== id); touched.push(x); }
+  });
+  if (editingId === id) startNew(d.type);
+  renderTab(activeTab());
+  let ok = await deleteRecord('doc', id);
+  for (const x of touched) { if (ok) ok = await saveRecord('doc', x); }
+  if (ok) showToast('削除しました');
+  return true;
+}
+
+// ===== 書類の見た目(A4) =====
+function docPagesHtml(d) {
+  const t = TYPES[d.type];
+  const c = calcDoc(d);
+  const co = company();
+  const sd = !!d.showDate && c.lines.some(l => l.d);
+  const incl = d.priceMode === 'incl';
+  const useStamp = stamp && settings.stampOn[d.type];
+  const reg = co.reg ? String(co.reg).replace(/[\s-]/g, '') : '';
+  const coLines = [
+    co.zip ? '〒' + escapeHtml(co.zip) : '', escapeHtml(co.address),
+    [co.tel ? 'TEL ' + escapeHtml(co.tel) : '', co.fax ? 'FAX ' + escapeHtml(co.fax) : ''].filter(Boolean).join('　'),
+    co.email ? escapeHtml(co.email) : '', co.person ? '担当:' + escapeHtml(co.person) : ''
+  ].filter(Boolean).join('<br>');
+  const head = `
+    <div class="dp-top"><div></div><div class="no">No. ${escapeHtml(d.no || '')}<br>発行日 ${fmtJP(d.issueDate)}</div></div>
+    <div class="dp-title">${t.title}</div><div class="dp-title-bar"></div>
+    <div class="dp-head">
+      <div class="dp-to">
+        <div class="name">${escapeHtml(d.clientName)}<small>${escapeHtml(d.honor || '')}</small></div>
+        ${(d.clientZip || d.clientAddress) ? `<div class="addr">${d.clientZip ? '〒' + escapeHtml(d.clientZip) + '　' : ''}${escapeHtml(d.clientAddress || '')}</div>` : ''}
+        <div class="dp-greet">${t.greet}</div>
+      </div>
+      <div class="dp-from">
+        ${useStamp ? `<img class="dp-stamp" src="${stamp}" alt="">` : ''}
+        <div class="co">${escapeHtml(co.name || '')}</div>
+        ${coLines}
+        ${reg ? `<div class="reg">登録番号 ${escapeHtml(reg)}</div>` : ''}
+      </div>
+    </div>
+    <div class="dp-info">
+      <table>
+        <tr><td class="k">件名</td><td>${escapeHtml(d.subject || '')}</td></tr>
+        <tr><td class="k">${t.extra}</td><td>${d[t.extraKey] ? fmtJP(d[t.extraKey]) : ''}</td></tr>
+        ${d.type === 'invoice' && co.bank ? `<tr><td class="k">お振込先</td><td>${escapeHtml(co.bank)} ${escapeHtml(co.account)}<br>${co.holder ? '口座名義 ' + escapeHtml(co.holder) : ''}</td></tr>` : ''}
+      </table>
+      <div class="dp-total"><div class="k">${t.totalLabel}</div><div class="v">${yen(c.total)}<small>(税込)</small></div></div>
+    </div>`;
+  const cols = sd
+    ? '<col style="width:62px"><col><col style="width:62px"><col style="width:48px"><col style="width:84px"><col style="width:96px">'
+    : '<col><col style="width:70px"><col style="width:52px"><col style="width:92px"><col style="width:104px">';
+  const thead = `<thead><tr>${sd ? '<th>日付</th>' : ''}<th>品名</th><th>数量</th><th>単位</th><th>単価${incl ? '(税込)' : ''}</th><th>金額${incl ? '(税込)' : '(税抜)'}</th></tr></thead>`;
+  const rowHtml = l => `<tr>${sd ? `<td class="c">${l.d ? fmtMD(l.d) : ''}</td>` : ''}<td>${escapeHtml(l.name)}${l.rate !== 10 ? '<span class="dp-mark">※</span>' : ''}</td><td class="r">${escapeHtml(numStr(toNum(l.qty)))}</td><td class="c">${escapeHtml(l.unit || '')}</td><td class="r">${priceYen(l.price)}</td><td class="r">${yen(lineAmount(l))}</td></tr>`;
+  const blankRow = `<tr class="blank">${sd ? '<td>.</td>' : ''}<td>.</td><td></td><td></td><td></td><td></td></tr>`;
+  const rateRows = [10, 8].filter(r => c.rates[r].used || r === 8).map(r =>
+    `<tr><td>${r}%対象${r === 8 ? '(軽減税率)' : ''}</td><td class="r">${yen(c.rates[r].base)}</td><td class="r">${yen(c.rates[r].tax)}</td></tr>`).join('');
+  const tail = `
+    <div class="dp-sum">
+      <div class="note">※印は軽減税率(8%)の対象です。<br>消費税は税率ごとに合計して計算しています(1円未満切り捨て)。${incl ? '<br>単価・金額は税込です。' : ''}</div>
+      <table class="dp-taxtbl">
+        <tr><th>税率区分</th><th>${incl ? '税抜金額' : '金額(税抜)'}</th><th>消費税</th></tr>
+        ${rateRows}
+        <tr><td>小計</td><td class="r">${yen(c.base)}</td><td class="r">${yen(c.tax)}</td></tr>
+        <tr class="grand"><td>合計(税込)</td><td class="r" colspan="2">${yen(c.total)}</td></tr>
+      </table>
+    </div>
+    ${d.note ? `<div class="dp-box"><span class="k">備考</span>${escapeHtml(d.note)}</div>` : ''}`;
+  const cont = (p) => `<div class="dp-cont"><span>${t.title}(つづき)　${escapeHtml(d.clientName)} ${escapeHtml(d.honor || '')}</span><span>No. ${escapeHtml(d.no || '')}</span></div>`;
+  const page = (inner) => `<div class="doc-page ${d.type}">${inner}<div class="dp-foot">%PAGE%</div></div>`;
+  const table = rows => `<table class="dp-lines"><colgroup>${cols}</colgroup>${thead}<tbody>${rows.join('')}</tbody></table>`;
+
+  // 実際に並べて高さを測りながら、ページに分ける
+  const area = document.getElementById('measure-area');
+  const fits = inner => { area.innerHTML = page(inner); const pg = area.firstElementChild; const ok = pg.scrollHeight <= pg.clientHeight; return ok; };
+  const rows = c.lines.map(rowHtml);
+  const pages = [];
+  let i = 0, first = true;
+  while (true) {
+    const top = first ? head : cont();
+    let cur = [];
+    while (i < rows.length) {
+      if (!fits(top + table(cur.concat([rows[i]]))) && cur.length) break;
+      cur.push(rows[i]); i++;
+    }
+    if (i >= rows.length) {
+      // 最後のページ:合計欄が入るか
+      if (fits(top + table(cur) + tail)) {
+        // 1ページで終わるときは、空の行を足して見栄えをよくする
+        if (first) { let pad = cur.slice(); while (pad.length < 30 && fits(top + table(pad.concat([blankRow])) + tail)) pad.push(blankRow); cur = pad; }
+        pages.push(top + table(cur) + tail);
+      } else {
+        pages.push(top + table(cur));
+        pages.push(cont() + tail);
+      }
+      break;
+    }
+    pages.push(top + table(cur));
+    first = false;
+  }
+  area.innerHTML = '';
+  const n = pages.length;
+  return pages.map((p, k) => page(p).replace('%PAGE%', n > 1 ? (k + 1) + ' / ' + n : ''));
+}
+
+// ===== プレビュー・PDF・印刷 =====
+let previewDoc = null;
+let previewPages = [];
+async function openPreview(d, unsaved) {
+  if (!d) return;
+  if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch (e) { /* ignore */ } }
+  previewDoc = d;
+  previewPages = docPagesHtml(d);
+  document.getElementById('preview-title').textContent = TYPES[d.type].label + ' ' + (d.no || '') + (unsaved ? '(まだ保存していません)' : '');
+  const box = document.getElementById('preview-pages');
+  document.getElementById('preview-modal').style.display = 'flex';
+  const w = Math.min(794, box.clientWidth || 794);
+  const z = w / 794;
+  box.innerHTML = previewPages.map(p => `<div class="pg-frame" style="width:${794 * z}px; height:${1123 * z}px; overflow:hidden;"><div style="zoom:${z};">${p}</div></div>`).join('');
+  document.getElementById('pv-status').textContent = previewPages.length > 1 ? previewPages.length + 'ページ' : '';
+  document.getElementById('pv-share').style.display = (navigator.canShare && window.File) ? '' : 'none';
+}
+function pdfFileName(d) {
+  const safe = s => String(s || '').replace(/[\\/:*?"<>|]/g, '').trim();
+  return safe(TYPES[d.type].label + '_' + d.clientName + '_' + d.no) + '.pdf';
+}
+async function buildPdf() {
+  if (typeof html2canvas === 'undefined' || !window.jspdf) throw new Error('PDFを作る部品を読み込めませんでした。インターネット接続を確かめて、ページを開き直してください');
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
+  const holder = document.createElement('div');
+  holder.style.cssText = 'position:fixed; left:-20000px; top:0;';
+  document.body.appendChild(holder);
+  try {
+    for (let k = 0; k < previewPages.length; k++) {
+      holder.innerHTML = previewPages[k];
+      const canvas = await html2canvas(holder.firstElementChild, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+      if (k > 0) pdf.addPage();
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 210, 297);
+    }
+  } finally { document.body.removeChild(holder); }
+  return pdf;
+}
+document.getElementById('pv-pdf').addEventListener('click', async () => {
+  const btn = document.getElementById('pv-pdf'), st = document.getElementById('pv-status');
+  btn.disabled = true; st.textContent = 'PDFを作っています…';
+  try {
+    const pdf = await buildPdf();
+    pdf.save(pdfFileName(previewDoc));
+    st.textContent = 'PDFを保存しました';
+  } catch (e) { st.textContent = ''; showSaveModal(e.message || 'PDFを作れませんでした', false); }
+  btn.disabled = false;
+});
+document.getElementById('pv-share').addEventListener('click', async () => {
+  const btn = document.getElementById('pv-share'), st = document.getElementById('pv-status');
+  btn.disabled = true; st.textContent = 'PDFを作っています…';
+  try {
+    const pdf = await buildPdf();
+    const file = new File([pdf.output('blob')], pdfFileName(previewDoc), { type: 'application/pdf' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      st.textContent = '';
+      await navigator.share({ files: [file], title: TYPES[previewDoc.type].label });
+    } else { pdf.save(pdfFileName(previewDoc)); st.textContent = 'この端末では共有できないため、PDFを保存しました'; }
+  } catch (e) { if (e && e.name !== 'AbortError') { st.textContent = ''; showSaveModal(e.message || 'PDFを作れませんでした', false); } else st.textContent = ''; }
+  btn.disabled = false;
+});
+document.getElementById('pv-print').addEventListener('click', () => {
+  document.getElementById('print-area').innerHTML = previewPages.join('');
+  setTimeout(() => window.print(), 80);
+});
+window.addEventListener('afterprint', () => { document.getElementById('print-area').innerHTML = ''; });
+
+// ===== マスタ =====
+function renderMaster() {
+  renderCompanyForm();
+  renderSettingsForm();
+  renderNoukaStatus();
+  renderClientMaster();
+  renderItemMaster();
+}
+function renderCompanyForm() {
+  CO_FIELDS.forEach(f => {
+    const el = document.getElementById('co-' + f);
+    el.value = (settings.company || {})[f] || '';
+    el.placeholder = noukaCo(f) || (f === 'reg' ? 'T1234567890123' : '');
+  });
+  updateRegHint();
+  renderStamp();
+}
+function updateRegHint() {
+  const v = document.getElementById('co-reg').value.trim() || noukaCo('reg');
+  const el = document.getElementById('co-reg-hint');
+  if (!v) { el.textContent = 'Tと13けたの数字です。請求書・納品書・見積書に入ります。'; el.style.color = ''; }
+  else if (regNoValid(v)) { el.textContent = '✓ 正しい形です'; el.style.color = 'var(--accent)'; }
+  else { el.textContent = '形が違うようです(Tと13けたの数字。例: T1234567890123)'; el.style.color = 'var(--danger)'; }
+}
+document.getElementById('co-reg').addEventListener('input', updateRegHint);
+function renderStamp() {
+  const pv = document.getElementById('stamp-preview');
+  pv.innerHTML = stamp ? `<img src="${stamp}" alt="印鑑">` : 'なし';
+  document.getElementById('stamp-remove-btn').style.display = stamp ? '' : 'none';
+  document.getElementById('stamp-on').innerHTML = Object.keys(TYPES).map(t => `<label><input type="checkbox" data-stamp-on="${t}" ${settings.stampOn[t] ? 'checked' : ''}> ${TYPES[t].label}に押す</label>`).join('');
+  document.querySelectorAll('[data-stamp-on]').forEach(el => el.addEventListener('change', async () => {
+    settings.stampOn[el.dataset.stampOn] = el.checked;
+    if (await saveSettings()) showToast('保存しました');
+  }));
+}
+document.getElementById('co-save').addEventListener('click', async () => {
+  const c = {};
+  CO_FIELDS.forEach(f => { const v = document.getElementById('co-' + f).value.trim(); if (v) c[f] = f === 'reg' ? v.replace(/[\s-]/g, '').toUpperCase() : v; });
+  if (c.reg && !regNoValid(c.reg) && !(await showConfirm('インボイス登録番号の形が違うようです(Tと13けたの数字)。このまま保存しますか？', '保存する'))) return;
+  settings.company = c;
+  const ok = await saveSettings();
+  renderCompanyForm();
+  renderCompanyWarn();
+  showSaveModal(ok ? '自社の情報を保存しました' : '保存に失敗しました。もう一度お試しください', ok);
+});
+// 印鑑の画像(小さくして保存する)
+document.getElementById('stamp-upload-btn').addEventListener('click', () => document.getElementById('stamp-input').click());
+document.getElementById('stamp-input').addEventListener('change', async ev => {
+  const file = ev.target.files[0];
+  ev.target.value = '';
+  if (!file) return;
+  const url = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => res(''); r.readAsDataURL(file); });
+  const img = await new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = url; });
+  if (!img) { showSaveModal('画像を読み込めませんでした。PNGかJPEGの画像を選んでください', false); return; }
+  const max = 220, s = Math.min(1, max / Math.max(img.width, img.height));
+  const cv = document.createElement('canvas');
+  cv.width = Math.round(img.width * s); cv.height = Math.round(img.height * s);
+  const ctx = cv.getContext('2d');
+  ctx.drawImage(img, 0, 0, cv.width, cv.height);
+  // 白い背景を透明にする(書類に重ねたとき文字が隠れないように)
+  try {
+    const px = ctx.getImageData(0, 0, cv.width, cv.height), a = px.data;
+    for (let k = 0; k < a.length; k += 4) { const mn = Math.min(a[k], a[k + 1], a[k + 2]); if (mn > 235) a[k + 3] = 0; else if (mn > 200) a[k + 3] = Math.round(a[k + 3] * (235 - mn) / 35); }
+    ctx.putImageData(px, 0, 0);
+  } catch (e) { /* ignore */ }
+  const data = cv.toDataURL('image/png');
+  const prev = stamp;
+  stamp = data;
+  renderStamp();
+  showProgress('印鑑の画像を保存しています', '');
+  try { await sheetStorage.set('stamp', stamp); saveToCache(); hideProgress(); showSaveModal('印鑑の画像を保存しました', true); }
+  catch (e) { hideProgress(); stamp = prev; renderStamp(); if (!e.unauthorized) showSaveModal('保存に失敗しました。もう一度お試しください', false); }
+});
+document.getElementById('stamp-remove-btn').addEventListener('click', async () => {
+  if (!(await showConfirm('印鑑の画像を消しますか？'))) return;
+  stamp = '';
+  renderStamp();
+  try { await sheetStorage.del('stamp'); saveToCache(); showToast('印鑑の画像を消しました'); }
+  catch (e) { if (!e.unauthorized) showToast('削除に失敗しました。もう一度お試しください'); }
+});
+
+function renderSettingsForm() {
+  const p = payment();
+  document.getElementById('set-pay-months').value = String(p.months || 0);
+  document.getElementById('set-pay-type').value = p.dayType === 'day' ? 'day' : 'endOfMonth';
+  document.getElementById('set-pay-day').value = p.day || 25;
+  document.getElementById('set-pay-day-wrap').style.display = p.dayType === 'day' ? '' : 'none';
+  document.getElementById('set-valid').value = String(settings.validDays || 30);
+  Object.keys(TYPES).forEach(t => {
+    document.getElementById('set-pre-' + t).value = settings.prefix[t] || '';
+    document.getElementById('set-note-' + t).value = settings.notes[t] || '';
+  });
+  updatePrefixSample();
+}
+function updatePrefixSample() {
+  const ym = todayStr().slice(0, 7).replace('-', '');
+  document.getElementById('set-pre-sample').textContent = '例: ' + (document.getElementById('set-pre-invoice').value.trim() || '') + ym + '-001(発行月ごとに001から)';
+}
+['set-pre-quote', 'set-pre-delivery', 'set-pre-invoice'].forEach(id => document.getElementById(id).addEventListener('input', updatePrefixSample));
+document.getElementById('set-pay-type').addEventListener('change', e => { document.getElementById('set-pay-day-wrap').style.display = e.target.value === 'day' ? '' : 'none'; });
+document.getElementById('set-save').addEventListener('click', async () => {
+  settings.payment = {
+    months: parseInt(document.getElementById('set-pay-months').value, 10) || 0,
+    dayType: document.getElementById('set-pay-type').value,
+    day: Math.max(1, Math.min(31, parseInt(document.getElementById('set-pay-day').value, 10) || 25))
+  };
+  settings.validDays = parseInt(document.getElementById('set-valid').value, 10) || 30;
+  Object.keys(TYPES).forEach(t => {
+    settings.prefix[t] = document.getElementById('set-pre-' + t).value.trim().replace(/[^\w-]/g, '');
+    settings.notes[t] = document.getElementById('set-note-' + t).value;
+  });
+  const ok = await saveSettings();
+  renderSettingsForm();
+  showSaveModal(ok ? '保存しました' : '保存に失敗しました。もう一度お試しください', ok);
+});
+
+// ----- この書類アプリの取引先 -----
+function nextOrder(list) { return list.reduce((m, x) => Math.max(m, x.sortOrder || 0), 0) + 1; }
+function renderClientMaster() {
+  const wrap = document.getElementById('ms-client');
+  if (!clients.length) { wrap.innerHTML = '<div class="empty-state">まだ登録していません(販売管理の取引先はそのまま使えます)</div>'; return; }
+  wrap.innerHTML = `<div style="overflow-x:auto;"><table class="master-table"><thead><tr><th>名前</th><th>敬称</th><th>郵便番号</th><th>住所</th><th></th></tr></thead><tbody>${
+    clients.map(c => `<tr>
+      <td><input class="cell-input" style="min-width:150px;" data-cn="${c.id}" value="${escapeHtml(c.name)}"></td>
+      <td><select class="cell-select" data-ch="${c.id}">${['御中', '様', '殿', ''].map(h => `<option value="${h}" ${(c.honor === undefined ? '御中' : c.honor) === h ? 'selected' : ''}>${h || 'なし'}</option>`).join('')}</select></td>
+      <td><input class="cell-input" style="width:100px;" data-cz="${c.id}" value="${escapeHtml(c.zip || '')}"></td>
+      <td><input class="cell-input" style="min-width:200px;" data-ca="${c.id}" value="${escapeHtml(c.address || '')}"></td>
+      <td class="row-actions"><button class="btn-text-danger" data-cdel="${c.id}">削除</button></td>
+    </tr>`).join('')
+  }</tbody></table></div>`;
+  const upd = async (id, patch) => { const c = clients.find(x => x.id === id); Object.assign(c, patch); if (await saveRecord('client', c)) showToast('保存しました'); };
+  wrap.querySelectorAll('[data-cn]').forEach(el => el.addEventListener('change', () => { const v = el.value.trim(); const c = clients.find(x => x.id === el.dataset.cn); if (!v) { el.value = c.name; return; } upd(c.id, { name: v }); }));
+  wrap.querySelectorAll('[data-ch]').forEach(el => el.addEventListener('change', () => upd(el.dataset.ch, { honor: el.value })));
+  wrap.querySelectorAll('[data-cz]').forEach(el => el.addEventListener('change', () => upd(el.dataset.cz, { zip: el.value.trim() })));
+  wrap.querySelectorAll('[data-ca]').forEach(el => el.addEventListener('change', () => upd(el.dataset.ca, { address: el.value.trim() })));
+  wrap.querySelectorAll('[data-cdel]').forEach(b => b.addEventListener('click', async () => {
+    const c = clients.find(x => x.id === b.dataset.cdel);
+    if (!(await showConfirm('取引先「' + c.name + '」を削除しますか？\n作った書類は消えず、宛先の名前もそのまま残ります。'))) return;
+    clients = clients.filter(x => x.id !== c.id);
+    renderClientMaster();
+    if (await deleteRecord('client', c.id)) showToast('削除しました');
+  }));
+}
+document.getElementById('mc-add').addEventListener('click', async () => {
+  const name = document.getElementById('mc-name').value.trim();
+  if (!name) { showToast('名前を入力してください'); return; }
+  if (clientByName(name)) { showToast('同じ名前の取引先がすでにあります'); return; }
+  const c = { id: uid(), name, honor: document.getElementById('mc-honor').value, zip: document.getElementById('mc-zip').value.trim(), address: document.getElementById('mc-addr').value.trim(), sortOrder: nextOrder(clients) };
+  clients.push(c);
+  ['mc-name', 'mc-zip', 'mc-addr'].forEach(id => { document.getElementById(id).value = ''; });
+  renderClientMaster();
+  const ok = await saveRecord('client', c);
+  showSaveModal(ok ? '取引先「' + name + '」を追加しました' : '保存に失敗しました。もう一度お試しください', ok);
+});
+
+// ----- この書類アプリの品目 -----
+function renderItemMaster() {
+  const wrap = document.getElementById('ms-item');
+  if (!items.length) { wrap.innerHTML = '<div class="empty-state">まだ登録していません(販売管理の品目はそのまま使えます)</div>'; return; }
+  wrap.innerHTML = `<div style="overflow-x:auto;"><table class="master-table"><thead><tr><th>並び順</th><th>品名</th><th>単位</th><th>単価(税抜)</th><th>税率</th><th></th></tr></thead><tbody>${
+    items.map((x, i) => `<tr>
+      <td style="white-space:nowrap;"><button class="btn-ghost" data-imove="${x.id}" data-dir="-1" ${i === 0 ? 'disabled' : ''}>↑</button> <button class="btn-ghost" data-imove="${x.id}" data-dir="1" ${i === items.length - 1 ? 'disabled' : ''}>↓</button></td>
+      <td><input class="cell-input" style="min-width:150px;" data-in="${x.id}" value="${escapeHtml(x.name)}"></td>
+      <td><input class="cell-input" style="width:70px;" data-iu="${x.id}" value="${escapeHtml(x.unit || '')}"></td>
+      <td><input class="cell-input num" style="width:100px;" inputmode="decimal" data-ip="${x.id}" value="${x.price === undefined ? '' : escapeHtml(x.price)}"></td>
+      <td><select class="cell-select" data-ir="${x.id}"><option value="8" ${x.rate !== 10 ? 'selected' : ''}>8%</option><option value="10" ${x.rate === 10 ? 'selected' : ''}>10%</option></select></td>
+      <td class="row-actions"><button class="btn-text-danger" data-idel="${x.id}">削除</button></td>
+    </tr>`).join('')
+  }</tbody></table></div>`;
+  const upd = async (id, patch) => { const x = items.find(y => y.id === id); Object.assign(x, patch); Object.keys(x).forEach(k => { if (x[k] === undefined) delete x[k]; }); if (await saveRecord('item', x)) showToast('保存しました'); };
+  wrap.querySelectorAll('[data-imove]').forEach(b => b.addEventListener('click', async () => {
+    const i = items.findIndex(x => x.id === b.dataset.imove), j = i + parseInt(b.dataset.dir, 10);
+    if (i < 0 || j < 0 || j >= items.length) return;
+    const a = items[i], c = items[j];
+    const ta = a.sortOrder || 0, tb = c.sortOrder || 0;
+    if (ta === tb) a.sortOrder = tb + (j - i); else { a.sortOrder = tb; c.sortOrder = ta; }
+    sortMasters(); renderItemMaster();
+    await saveRecord('item', a); await saveRecord('item', c);
+  }));
+  wrap.querySelectorAll('[data-in]').forEach(el => el.addEventListener('change', () => { const v = el.value.trim(); const x = items.find(y => y.id === el.dataset.in); if (!v) { el.value = x.name; return; } upd(x.id, { name: v }); }));
+  wrap.querySelectorAll('[data-iu]').forEach(el => el.addEventListener('change', () => upd(el.dataset.iu, { unit: el.value.trim() })));
+  wrap.querySelectorAll('[data-ip]').forEach(el => el.addEventListener('change', () => upd(el.dataset.ip, { price: el.value.trim() === '' ? undefined : toNum(el.value) })));
+  wrap.querySelectorAll('[data-ir]').forEach(el => el.addEventListener('change', () => upd(el.dataset.ir, { rate: parseInt(el.value, 10) === 10 ? 10 : 8 })));
+  wrap.querySelectorAll('[data-idel]').forEach(b => b.addEventListener('click', async () => {
+    const x = items.find(y => y.id === b.dataset.idel);
+    if (!(await showConfirm('品目「' + x.name + '」を削除しますか？\n作った書類の明細は消えません。'))) return;
+    items = items.filter(y => y.id !== x.id);
+    renderItemMaster();
+    if (await deleteRecord('item', x.id)) showToast('削除しました');
+  }));
+}
+document.getElementById('mi-add').addEventListener('click', async () => {
+  const name = document.getElementById('mi-name').value.trim();
+  if (!name) { showToast('品名を入力してください'); return; }
+  if (items.some(x => x.name === name)) { showToast('同じ名前の品目がすでにあります'); return; }
+  const pv = document.getElementById('mi-price').value.trim();
+  const x = { id: uid(), name, unit: document.getElementById('mi-unit').value.trim(), rate: parseInt(document.getElementById('mi-rate').value, 10) === 10 ? 10 : 8, sortOrder: nextOrder(items) };
+  if (pv !== '') x.price = toNum(pv);
+  items.push(x);
+  ['mi-name', 'mi-unit', 'mi-price'].forEach(id => { document.getElementById(id).value = ''; });
+  renderItemMaster();
+  const ok = await saveRecord('item', x);
+  showSaveModal(ok ? '品目「' + name + '」を追加しました' : '保存に失敗しました。もう一度お試しください', ok);
+});
+
+// ===== バックアップ・復元 =====
+document.getElementById('backup-download-btn').addEventListener('click', () => {
+  const backup = { appName: APP_NAME, version: 1, exportedAt: new Date().toISOString(), docs, clients, items, settings, stamp };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'shorui-backup_' + todayStr() + '.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('バックアップをダウンロードしました');
+});
+document.getElementById('backup-restore-btn').addEventListener('click', () => document.getElementById('backup-restore-input').click());
+document.getElementById('backup-restore-input').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  let data;
+  try { data = JSON.parse(await file.text()); } catch (err) { showSaveModal('ファイルを読み込めませんでした。正しいバックアップファイルか確認してください', false); return; }
+  if (!data || data.appName !== APP_NAME || !Array.isArray(data.docs)) { showSaveModal('このファイルは書類作成のバックアップではないようです', false); return; }
+  const nd = data.docs, nc = Array.isArray(data.clients) ? data.clients : [], ni = Array.isArray(data.items) ? data.items : [], ns = mergeSettings(data.settings), nst = data.stamp || '';
+  if (!(await showConfirm('このファイルの内容で、今のデータを置き換えます。\n書類 ' + nd.length + '件・取引先 ' + nc.length + '件・品目 ' + ni.length + '件\n(この操作は取り消せません。不安なときは先に「バックアップをダウンロード」してください)', '置き換える'))) return;
+  const pairs = [].concat(nd.map(r => [keyOf('doc', r), JSON.stringify(r)]), nc.map(r => [keyOf('client', r), JSON.stringify(r)]), ni.map(r => [keyOf('item', r), JSON.stringify(r)]), [['settings', JSON.stringify(ns)]]);
+  if (nst) pairs.push(['stamp', nst]);
+  const newKeys = {}; pairs.forEach(p => { newKeys[p[0]] = true; });
+  const oldKeys = [].concat(docs.map(r => keyOf('doc', r)), clients.map(r => keyOf('client', r)), items.map(r => keyOf('item', r)), stamp && !nst ? ['stamp'] : []).filter(k => !newKeys[k]);
+  showProgress('復元しています', '');
+  try {
+    for (const k of oldKeys) await sheetStorage.del(k);
+    for (let i = 0; i < pairs.length; i++) {
+      document.getElementById('progress-message').textContent = (i + 1) + ' / ' + pairs.length + ' 件';
+      await sheetStorage.set(pairs[i][0], pairs[i][1]);
+    }
+    docs = nd; clients = nc; items = ni; settings = ns; stamp = nst;
+    sortMasters(); loadedOnce = true; saveToCache();
+    hideProgress();
+    showSaveModal('復元しました(' + pairs.length + '件)', true);
+  } catch (err) {
+    hideProgress();
+    if (!err.unauthorized) showSaveModal('途中で失敗しました。通信状況を確認して、もう一度同じファイルで復元してください(何度やり直しても大丈夫です)', false);
+    await loadData();
+  }
+  startNew();
+  renderAll();
+});
+
+document.getElementById('logout-btn').addEventListener('click', async () => {
+  if (!(await showConfirm('この端末からログアウトしますか？', 'ログアウト'))) return;
+  try { localStorage.removeItem(PASSWORD_STORAGE_KEY); if (!DEMO) { localStorage.removeItem(CACHE_KEY); localStorage.removeItem(NOUKA_CACHE_KEY); } } catch (e) { /* ignore */ }
+  location.reload();
+});
+
+// ===== 起動 =====
+document.getElementById('refresh-data-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('refresh-data-btn');
+  btn.classList.add('is-loading'); btn.textContent = '↻ 更新中…';
+  const ok = await loadData();
+  if (ok) await fetchNouka(false);
+  renderAll();
+  btn.classList.remove('is-loading'); btn.textContent = '↻ 最新に更新';
+  if (ok) showToast('最新の内容に更新しました');
+});
+
+(async function init() {
+  if (DEMO) document.getElementById('demo-banner').style.display = 'block';
+  loadNoukaCache();
+  if (loadFromCache()) { /* まず前回のデータですぐ表示 */ }
+  draft = newDraft('quote');
+  renderAll();
+  if (!DEMO && !getStoredPassword()) return; // 合言葉の入力待ち
+  const ok = await loadData();               // 裏で最新を取得して更新
+  if (ok && !editingId && !draft.lines.some(lineFilled) && !draft.clientName) {
+    // 何も入力していなければ、最新の設定(備考の初期文・期限)で作り直す
+    draft = newDraft(draft.type);
+  }
+  renderAll();
+  if (ok) fetchNouka(false);
+})();
+</script>
+</body>
+</html>
